@@ -15,33 +15,47 @@
 
 ## Milestone v0.2.0
 
-### Epic 1: repository scaffold
+### Epic 1: GUI scaffold
 
-- [ ] 建立基础目录结构
-- [ ] 确定状态文件格式
-- [ ] 确定模板文件命名规范
-- [ ] 增加最小可运行 CLI 入口
+- [x] 确定 v0.2.0 采用桌面 GUI 入口
+- [x] 确定目标字数支持 1-1000 万字
+- [x] 增加最小可运行 GUI 窗口
+- [x] 增加项目创建表单
+- [x] 增加项目预览页
+- [x] 增加版本规则页
 
 ### Epic 2: project initialization
 
-- [ ] 新建作品项目命令
-- [ ] 生成总纲模板
-- [ ] 生成人物圣经模板
-- [ ] 生成伏笔账本模板
-- [ ] 生成卷纲模板
-- [ ] 生成剧情单元模板
+- [x] 建立基础目录结构
+- [x] 确定状态文件格式
+- [x] 确定模板文件命名规范
+- [x] 新建作品项目动作
+- [x] 生成总纲模板
+- [x] 生成人物圣经模板
+- [x] 生成伏笔账本模板
+- [x] 生成卷纲模板
+- [x] 生成剧情单元模板
+- [x] 生成章节卡模板
+
+### Epic 3: v0.2 polish
+
+- [x] 增加项目打开能力
+- [x] 把项目预览改成真实项目仪表盘
+- [x] 增加基础错误提示优化
+- [x] 补充 GUI 启动说明
 
 ## Milestone v0.3.0
 
-### Epic 3: planning engine
+### Epic 4: planning engine
 
 - [ ] 目标字数转章节规模
 - [ ] 章节规模转卷规模
 - [ ] 卷规模转剧情单元
 - [ ] 默认爽点节奏规则
 - [ ] 默认伏笔节奏规则
+- [ ] 按不同字数档位提供不同规划 profile
 
-### Epic 4: prompt structure
+### Epic 5: prompt structure
 
 - [ ] 总导演 prompt
 - [ ] 单元规划 prompt
@@ -51,7 +65,7 @@
 
 ## Milestone v0.4.0
 
-### Epic 5: chapter pipeline
+### Epic 6: chapter pipeline
 
 - [ ] 当前章节定位
 - [ ] 下一章章节卡生成
@@ -61,7 +75,7 @@
 
 ## Milestone v0.5.0
 
-### Epic 6: local review
+### Epic 7: local review
 
 - [ ] 解释过满检测
 - [ ] 重复句式检测
@@ -71,7 +85,7 @@
 
 ## Milestone v0.6.0
 
-### Epic 7: automation
+### Epic 8: automation
 
 - [ ] 定义 LLM 适配层
 - [ ] 接入外部模型生成
@@ -81,7 +95,7 @@
 
 ## Milestone v1.0.0
 
-### Epic 8: MVP hardening
+### Epic 9: MVP hardening
 
 - [ ] 端到端跑通一本项目的前 30 章试运行
 - [ ] 修正状态模型
