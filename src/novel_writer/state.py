@@ -439,6 +439,7 @@ def build_story_state(data: ProjectInitData, project_dir: Path) -> dict[str, Any
             'current_chapter': 1,
             'completed_chapters': 0,
             'completed_words': 0,
+            'chapter_log': [],
         },
         'concept': {
             'selling_point': '',
@@ -470,6 +471,7 @@ def load_project_state(project_dir: Path) -> dict[str, Any]:
     state['progress'].setdefault('current_chapter', 1)
     state['progress'].setdefault('completed_chapters', 0)
     state['progress'].setdefault('completed_words', 0)
+    state['progress'].setdefault('chapter_log', [])
     state['meta'].setdefault('estimated_plot_units', len(state['plot_units']))
     return state
 
@@ -477,6 +479,7 @@ def load_project_state(project_dir: Path) -> dict[str, Any]:
 def project_file_shortcuts(project_dir: Path) -> dict[str, Path]:
     docs_dir = project_dir / 'docs'
     prompts_dir = project_dir / 'prompts'
+    chapter_cards_dir = project_dir / 'chapter_cards'
     return {
         '项目目录': project_dir,
         '状态文件': state_file_path(project_dir),
@@ -487,11 +490,14 @@ def project_file_shortcuts(project_dir: Path) -> dict[str, Path]:
         '卷纲建议': docs_dir / '04_卷纲建议.md',
         '剧情单元': docs_dir / '05_剧情单元模板.md',
         '章节卡模板': docs_dir / '06_章节卡模板.md',
+        '最近进展': docs_dir / '07_最近进展.md',
+        '当前章节卡': chapter_cards_dir / 'current_chapter_card.md',
         '总导演提示': prompts_dir / '01_总导演提示.md',
         '单元规划提示': prompts_dir / '02_单元规划提示.md',
         '章节卡提示': prompts_dir / '03_章节卡提示.md',
         '正文写作提示': prompts_dir / '04_正文写作提示.md',
         '审校提示': prompts_dir / '05_审校提示.md',
+        '当前章节写作提示': prompts_dir / 'current_chapter_prompt.md',
     }
 
 
@@ -830,6 +836,209 @@ def render_reviewer_prompt(state: dict[str, Any]) -> str:
     return '\n'.join(lines) + '\n'
 
 
+def current_volume(state: dict[str, Any], chapter_number: int | None = None) -> dict[str, Any]:
+    target_chapter = chapter_number or state['progress']['current_chapter']
+    for volume in state.get('volumes', []):
+        if volume['chapter_start'] <= target_chapter <= volume['chapter_end']:
+            return volume
+    return state['volumes'][-1]
+
+
+def current_plot_unit(state: dict[str, Any], chapter_number: int | None = None) -> dict[str, Any]:
+    target_chapter = chapter_number or state['progress']['current_chapter']
+    for unit in state.get('plot_units', []):
+        if unit['chapter_start'] <= target_chapter <= unit['chapter_end']:
+            return unit
+    return state['plot_units'][-1]
+
+
+def unit_stage(unit: dict[str, Any], chapter_number: int) -> str:
+    total = max(1, unit['chapter_count'])
+    progress = chapter_number - unit['chapter_start'] + 1
+    ratio = progress / total
+    if progress <= 1:
+        return '起手'
+    if ratio <= 0.4:
+        return '铺压'
+    if ratio <= 0.75:
+        return '反转'
+    if chapter_number < unit['chapter_end']:
+        return '冲刺'
+    return '兑现'
+
+
+def recent_events(state: dict[str, Any], limit: int = 5) -> list[str]:
+    events = state['progress'].get('chapter_log', [])
+    result: list[str] = []
+    for item in events[-limit:]:
+        text = f"第{item['chapter']}章：{item['summary']}"
+        if item.get('hook'):
+            text += f" 结尾钩子：{item['hook']}"
+        result.append(text)
+    return result
+
+
+def chapter_card_data(state: dict[str, Any]) -> dict[str, Any]:
+    chapter_number = state['progress']['current_chapter']
+    volume = current_volume(state, chapter_number)
+    unit = current_plot_unit(state, chapter_number)
+    stage = unit_stage(unit, chapter_number)
+    profile = state['planning_profile']
+
+    card_goal = {
+        '起手': '快速建立当前章节的直接目标和外部阻力。',
+        '铺压': '扩大上一章留下的问题，不急着解决，先把代价写实。',
+        '反转': '制造局势或认知层面的翻转，提升读者追读欲望。',
+        '冲刺': '压缩选择空间，把当前单元推向高潮。',
+        '兑现': '兑现本单元阶段回报，但不能把更大问题收死。',
+    }[stage]
+
+    ending_hook = {
+        '起手': '结尾必须出现新的观察者、规则变化或风险升级。',
+        '铺压': '结尾让角色以为找到出口，但出口本身不安全。',
+        '反转': '结尾抛出更高代价的新选择，而不是干净胜利。',
+        '冲刺': '结尾明确下一章一定有结果，但结果方向未定。',
+        '兑现': '结尾在回报后立刻抬高下一轮风险。',
+    }[stage]
+
+    hidden = []
+    if stage in {'起手', '铺压'}:
+        hidden.append('不要提前说破本单元后半段才该揭开的真正收益或真正敌意。')
+    if volume['role'] in {'truth', 'finale'}:
+        hidden.append('不要一次性说透终局真相，必须保留后续回收空间。')
+    if not hidden:
+        hidden.append('不要把本卷或本单元的长期问题在一章内全部解释清楚。')
+
+    return {
+        'chapter_number': chapter_number,
+        'volume_title': volume['title'],
+        'volume_role': volume['role'],
+        'unit_id': unit['id'],
+        'unit_title': unit['title'],
+        'stage': stage,
+        'chapter_goal': card_goal,
+        'chapter_conflict': unit['purpose'],
+        'information_release': f"围绕“{unit['payoff']}”释放一层信息，但保留更深一层的解释。",
+        'payoff_target': unit['payoff'],
+        'ending_hook': ending_hook,
+        'must_hide': hidden,
+        'recent_events': recent_events(state),
+        'profile_cycles': {
+            'small': profile['small_payoff_cycle'],
+            'mid': profile['mid_payoff_cycle'],
+            'big': profile['big_payoff_cycle'],
+        },
+    }
+
+
+def render_recent_progress(state: dict[str, Any]) -> str:
+    lines = ['# 最近进展', '']
+    events = recent_events(state, limit=8)
+    if not events:
+        lines.append('- 暂无章节推进记录。')
+    else:
+        for item in events:
+            lines.append(f'- {item}')
+    return '\n'.join(lines) + '\n'
+
+
+def render_current_chapter_card(state: dict[str, Any]) -> str:
+    card = chapter_card_data(state)
+    lines = [
+        f"# 第{card['chapter_number']}章 章节卡",
+        '',
+        f"- 所属卷：{card['volume_title']} ({card['volume_role']})",
+        f"- 所属单元：{card['unit_id']} {card['unit_title']}",
+        f"- 单元阶段：{card['stage']}",
+        '',
+        '## 本章目的',
+        card['chapter_goal'],
+        '',
+        '## 本章冲突',
+        card['chapter_conflict'],
+        '',
+        '## 信息释放',
+        card['information_release'],
+        '',
+        '## 本章阶段回报',
+        card['payoff_target'],
+        '',
+        '## 不能说破',
+    ]
+    for item in card['must_hide']:
+        lines.append(f"- {item}")
+    lines.extend(
+        [
+            '',
+            '## 结尾钩子',
+            card['ending_hook'],
+            '',
+            '## 最近事件',
+        ]
+    )
+    if card['recent_events']:
+        for item in card['recent_events']:
+            lines.append(f"- {item}")
+    else:
+        lines.append('- 这是当前项目的开篇阶段，优先建立抓人钩子和规则压迫。')
+    return '\n'.join(lines) + '\n'
+
+
+def render_current_chapter_prompt(state: dict[str, Any]) -> str:
+    card = chapter_card_data(state)
+    lines = [
+        f"# 第{card['chapter_number']}章 当前写作提示",
+        '',
+        '你现在只写当前章节，不重写总纲、卷纲和后续剧情。',
+        '',
+        '## 当前定位',
+        f"- 所属卷：{card['volume_title']} ({card['volume_role']})",
+        f"- 所属单元：{card['unit_id']} {card['unit_title']}",
+        f"- 单元阶段：{card['stage']}",
+        '',
+        '## 当前任务',
+        f"- 本章目的：{card['chapter_goal']}",
+        f"- 本章冲突：{card['chapter_conflict']}",
+        f"- 信息释放：{card['information_release']}",
+        f"- 本章回报：{card['payoff_target']}",
+        '',
+        '## 节奏提醒',
+        f"- 小回报：{card['profile_cycles']['small']}",
+        f"- 中回报：{card['profile_cycles']['mid']}",
+        f"- 大回报：{card['profile_cycles']['big']}",
+        '',
+        '## 禁止事项',
+    ]
+    for item in card['must_hide']:
+        lines.append(f"- {item}")
+    lines.extend(
+        [
+            '',
+            '## 结尾要求',
+            card['ending_hook'],
+            '',
+            '输出时只给正文，不要附解释。',
+        ]
+    )
+    return '\n'.join(lines) + '\n'
+
+
+def update_story_progress(state: dict[str, Any], summary: str, hook: str, words: int = 0) -> dict[str, Any]:
+    chapter_number = state['progress']['current_chapter']
+    state['progress']['chapter_log'].append(
+        {
+            'chapter': chapter_number,
+            'summary': summary.strip(),
+            'hook': hook.strip(),
+            'words': max(0, words),
+        }
+    )
+    state['progress']['completed_chapters'] = chapter_number
+    state['progress']['completed_words'] += max(0, words)
+    state['progress']['current_chapter'] = chapter_number + 1
+    return state
+
+
 def build_dashboard_metrics(state: dict[str, Any]) -> dict[str, str]:
     meta = state['meta']
     profile = state['planning_profile']
@@ -914,12 +1123,15 @@ def write_project_files(project_dir: Path, state: dict[str, Any]) -> list[Path]:
         project_dir / 'docs' / '04_卷纲建议.md': render_volumes(state),
         project_dir / 'docs' / '05_剧情单元模板.md': render_plot_units(state),
         project_dir / 'docs' / '06_章节卡模板.md': render_chapter_card_template(),
+        project_dir / 'docs' / '07_最近进展.md': render_recent_progress(state),
+        project_dir / 'chapter_cards' / 'current_chapter_card.md': render_current_chapter_card(state),
         project_dir / 'prompts' / '00_项目上下文.md': render_project_context_prompt(state),
         project_dir / 'prompts' / '01_总导演提示.md': render_director_prompt(state),
         project_dir / 'prompts' / '02_单元规划提示.md': render_unit_planner_prompt(state),
         project_dir / 'prompts' / '03_章节卡提示.md': render_chapter_card_prompt(state),
         project_dir / 'prompts' / '04_正文写作提示.md': render_writer_prompt(state),
         project_dir / 'prompts' / '05_审校提示.md': render_reviewer_prompt(state),
+        project_dir / 'prompts' / 'current_chapter_prompt.md': render_current_chapter_prompt(state),
         project_dir / 'prompts' / 'README.md': '# Prompts\n\n当前版本已经生成总导演、单元规划、章节卡、正文写作和审校提示。\n',
     }
 
@@ -938,6 +1150,10 @@ def initialize_project(data: ProjectInitData) -> ProjectResult:
     state = build_story_state(data, project_dir)
     created_files = write_project_files(project_dir, state)
     return ProjectResult(project_dir=project_dir, state=state, created_files=created_files)
+
+
+def save_project_state(project_dir: Path, state: dict[str, Any]) -> list[Path]:
+    return write_project_files(project_dir, state)
 
 
 def summarize_result(result: ProjectResult) -> str:

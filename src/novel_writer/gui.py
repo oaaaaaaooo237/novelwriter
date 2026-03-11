@@ -4,7 +4,7 @@ import os
 import subprocess
 import tkinter as tk
 from pathlib import Path
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox, simpledialog, ttk
 from typing import Any
 
 from . import __version__
@@ -17,7 +17,9 @@ from .state import (
     initialize_project,
     load_project_state,
     project_file_shortcuts,
+    save_project_state,
     summarize_result,
+    update_story_progress,
 )
 
 
@@ -51,7 +53,7 @@ class App(tk.Tk):
         ttk.Label(header, text='Shuangwen Pipeline', font=('Microsoft YaHei UI', 18, 'bold')).pack(anchor='w')
         ttk.Label(
             header,
-            text='长篇网文写作助手 v0.3.0 开发中：已具备项目初始化、规划引擎和 prompt 文件包。',
+            text='长篇网文写作助手 v0.4.0 开发中：开始接入章节卡生成与章节推进。',
         ).pack(anchor='w', pady=(4, 0))
 
         notebook = ttk.Notebook(outer)
@@ -122,14 +124,16 @@ class App(tk.Tk):
         action_bar.pack(fill=tk.X)
         ttk.Button(action_bar, text='打开已有项目', command=self._open_project).pack(side=tk.LEFT)
         ttk.Button(action_bar, text='刷新当前项目', command=self._refresh_current_project).pack(side=tk.LEFT, padx=(8, 0))
+        ttk.Button(action_bar, text='刷新章节卡', command=self._refresh_chapter_pipeline).pack(side=tk.LEFT, padx=(8, 0))
+        ttk.Button(action_bar, text='推进一章', command=self._advance_chapter).pack(side=tk.LEFT, padx=(8, 0))
 
         shortcut_bar = ttk.LabelFrame(parent, text='项目快捷入口', padding=8)
         shortcut_bar.pack(fill=tk.X, pady=(12, 12))
         self.shortcut_buttons: dict[str, ttk.Button] = {}
         shortcut_groups = [
             ['项目目录', '状态文件', '项目总览', '总纲模板', '人物圣经', '伏笔账本'],
-            ['卷纲建议', '剧情单元', '章节卡模板', '总导演提示', '单元规划提示', '章节卡提示'],
-            ['正文写作提示', '审校提示'],
+            ['卷纲建议', '剧情单元', '章节卡模板', '最近进展', '当前章节卡', '当前章节写作提示'],
+            ['总导演提示', '单元规划提示', '章节卡提示', '正文写作提示', '审校提示'],
         ]
         for row_index, labels in enumerate(shortcut_groups):
             row = ttk.Frame(shortcut_bar)
@@ -355,6 +359,37 @@ class App(tk.Tk):
             return
 
         self._apply_dashboard_state(self.current_project_dir, state)
+
+    def _refresh_chapter_pipeline(self) -> None:
+        if self.current_project_dir is None or self.current_state is None:
+            messagebox.showwarning('尚未打开项目', '请先创建或打开一个项目。')
+            return
+
+        save_project_state(self.current_project_dir, self.current_state)
+        refreshed = load_project_state(self.current_project_dir)
+        self._apply_dashboard_state(self.current_project_dir, refreshed)
+        messagebox.showinfo('章节卡已刷新', '当前章节卡、当前写作提示和最近进展已更新。')
+
+    def _advance_chapter(self) -> None:
+        if self.current_project_dir is None or self.current_state is None:
+            messagebox.showwarning('尚未打开项目', '请先创建或打开一个项目。')
+            return
+
+        chapter_number = self.current_state['progress']['current_chapter']
+        summary = simpledialog.askstring('推进一章', f'请输入第{chapter_number}章的一句话摘要：', parent=self)
+        if summary is None or not summary.strip():
+            return
+
+        hook = simpledialog.askstring('推进一章', '请输入本章结尾钩子：', parent=self)
+        if hook is None:
+            return
+
+        words = simpledialog.askinteger('推进一章', '请输入本章实际字数（可选，默认 0）：', parent=self, minvalue=0)
+        updated_state = update_story_progress(self.current_state, summary, hook, words or 0)
+        save_project_state(self.current_project_dir, updated_state)
+        reloaded = load_project_state(self.current_project_dir)
+        self._apply_dashboard_state(self.current_project_dir, reloaded)
+        messagebox.showinfo('推进成功', f'已记录第{chapter_number}章，并推进到第{reloaded["progress"]["current_chapter"]}章。')
 
     def _create_project(self) -> None:
         title = self.title_var.get().strip()
