@@ -17,13 +17,16 @@
 - [x] tasks created
 - [x] architecture overview created
 - [x] versioning guide created
+- [x] release process guide created
 
 ## GitHub collaboration
 
 - [x] issue templates created
 - [x] pull request template created
 - [x] remote GitHub repository connected
-- [ ] first release pushed
+- [x] stable release tag pushed
+- [x] stable release branch created
+- [x] next development branch created
 
 ## Product definition
 
@@ -34,7 +37,7 @@
 
 ## Next implementation gates
 
-- [ ] confirm v0.2.0 scope
-- [ ] create code scaffold
+- [ ] confirm v0.2.0 GUI scope
+- [ ] create GUI code scaffold
 - [ ] implement project initializer
 - [ ] create first generated project template

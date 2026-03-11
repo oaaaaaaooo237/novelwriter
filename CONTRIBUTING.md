@@ -2,31 +2,47 @@
 
 ## Collaboration style
 
-这个项目默认采用“计划先行，版本推进”的协作方式。
+这个项目默认采用“版本隔离 + 版本推进”的协作方式。
 
 在实现任何功能前，优先确认：
 
 - 是否属于当前版本范围
+- 是否在正确的开发分支上
 - 是否有对应需求条目
 - 是否有对应任务项
-- 是否会影响已有版本边界
+- 是否会影响已有稳定版本
 
 ## Branching
 
-建议使用以下分支命名：
+固定规则：
 
-- `main`：稳定主干
-- `codex/<topic>`：功能分支
+- `main`：当前稳定版本
+- `release/vX.Y.Z`：正式版本归档分支
+- `codex/vX.Y.Z`：当前开发版本分支
 - `docs/<topic>`：纯文档分支
+
+禁止直接在已经归档的 `release/*` 上继续开发。
+
+## Release discipline
+
+每次版本调整后，都必须同时完成：
+
+1. 本地创建或更新对应开发分支 / 归档分支
+2. 本地创建正式 tag
+3. 推送远程分支
+4. 推送远程 tag
+
+也就是说，版本不是只改一个数字，而是要在本地和远程同时留下完整轨迹。
 
 ## Commit style
 
 建议格式：
 
-- `docs: add v0.1 planning docs`
-- `feat: add project scaffold generator`
-- `refactor: simplify chapter card builder`
+- `docs: add release isolation workflow`
+- `feat: add gui project initializer`
+- `feat: add plot unit planner`
 - `fix: repair foreshadow ledger update`
+- `chore: release v0.2.0`
 
 ## Pull request expectations
 
@@ -36,6 +52,7 @@
 - 架构调整
 - 单一功能实现
 - 单一模块修复
+- 单一版本发布准备
 
 PR 描述里建议说明：
 
@@ -50,7 +67,16 @@ PR 描述里建议说明：
 - 不跨版本偷偷塞功能
 - 未写进需求或任务的改动，先补文档再实现
 - 每个版本结束前更新 `CHANGELOG.md`
-- 重要里程碑打 tag
+- 每个正式版本都必须保留 `release/vX.Y.Z` 和 `vX.Y.Z` tag
+- `main` 只承载已经稳定的版本，不直接做日常开发
+
+## Recommended workflow
+
+1. 从 `main` 切出 `codex/vNext` 开发分支。
+2. 在该分支完成当前版本任务。
+3. 测试通过后合并到 `main`。
+4. 在 `main` 上创建 `release/vX.Y.Z` 分支和 `vX.Y.Z` tag。
+5. 推送 `main`、`release/vX.Y.Z` 和 `vX.Y.Z` 到远程。
 
 ## Out of scope for review
 

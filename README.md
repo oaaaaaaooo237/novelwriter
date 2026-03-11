@@ -11,37 +11,47 @@
 - 章节卡
 - 节奏审校
 - 人机协同与后续自动化
+- GUI 写作工作台
 
 ## 当前阶段
 
-当前版本：`v0.1.1`
+当前稳定版本：`v0.1.1`
 
-当前状态：项目策划与仓库骨架阶段
+当前开发分支：`codex/v0.2.0`
 
-这一版完成了两件事：
+当前状态：稳定版和开发版已经隔离，后续每次版本推进都同时走本地 Git 和远程 Git。
 
-1. 把正式项目需要的文档、版本节奏、任务拆解、需求边界和 GitHub 协作约定落地。
-2. 把远程仓库旧历史并入当前仓库，但把当前工作树切换为新的正式项目版本，方便后续继续开发。
+## 版本隔离规则
 
-## 为什么先做成项目
+从现在开始，项目采用三层版本隔离：
 
-长篇网文创作失败，通常不是因为单章写不出来，而是因为：
+1. `main`
+   只保留当前稳定版本。
+2. `release/vX.Y.Z`
+   每个正式版本都保留一个独立归档分支。
+3. `codex/vX.Y.Z`
+   下一个版本在独立开发分支推进，不直接污染稳定版。
 
-- 没有长线规划
-- 伏笔没有账本
-- 爽点和压迫节奏不稳定
-- 每章都写成闭环短篇
-- 人物动机和关系线逐渐漂移
+再配合：
 
-所以这个项目的第一目标不是“写一章”，而是“建立一个可持续产出 200-300 章的写作流水线”。
+- `vX.Y.Z` tag：精确标记正式发布点
+- 本地 Git：保留分支和 tag
+- 远程 GitHub：同步保留分支和 tag
+
+这意味着以后每次版本调整后，都会有：
+
+- 一个稳定主线
+- 一个版本归档点
+- 一个明确的开发分支
+- 一个本地和远程都一致的版本记录
 
 ## 计划中的产品形态
 
 第一阶段决定采用：
 
-`本地文件化工作流 + Python CLI + Prompt/Agent 编排`
+`本地文件化工作流 + Python 核心引擎 + GUI + Prompt/Agent 编排`
 
-不先做重前端，原因是长篇写作最需要的是：
+不先做重云端，原因是长篇写作最需要的是：
 
 - 可追溯
 - 可检查
@@ -54,18 +64,10 @@
 ```text
 .
 ├─ .github/
-│  ├─ ISSUE_TEMPLATE/
-│  └─ PULL_REQUEST_TEMPLATE.md
 ├─ docs/
-│  ├─ architecture.md
-│  ├─ open-questions.md
-│  ├─ project-checklist.md
-│  ├─ project-plan.md
-│  ├─ requirements.md
-│  ├─ tasks.md
-│  └─ versioning.md
 ├─ projects/
 ├─ samples/
+├─ scripts/
 ├─ src/
 ├─ templates/
 ├─ tests/
@@ -83,7 +85,8 @@
 2. 把“总纲-卷纲-剧情单元-章节卡-正文-审校”做成流水线。
 3. 让 AI 只做窄任务，不直接无限自由发挥。
 4. 保留人工总导演位置，保证长期节奏和人物活人感。
-5. 能够按 GitHub 版本持续迭代，而不是一次性试验。
+5. 用 GUI 承载日常使用场景。
+6. 能够按版本隔离持续迭代，而不是一次性试验。
 
 ## 文档入口
 
@@ -92,33 +95,34 @@
 - 任务拆分：[docs/tasks.md](/D:/python%20programs/codex/novel%20writer/docs/tasks.md)
 - 架构说明：[docs/architecture.md](/D:/python%20programs/codex/novel%20writer/docs/architecture.md)
 - 版本归档：[docs/versioning.md](/D:/python%20programs/codex/novel%20writer/docs/versioning.md)
+- 发布流程：[docs/release-process.md](/D:/python%20programs/codex/novel%20writer/docs/release-process.md)
 - 项目清单：[docs/project-checklist.md](/D:/python%20programs/codex/novel%20writer/docs/project-checklist.md)
 - 未决问题：[docs/open-questions.md](/D:/python%20programs/codex/novel%20writer/docs/open-questions.md)
 
 ## 版本路线
 
-- `v0.1.0`：项目策划、需求、任务、版本规范、GitHub 骨架
 - `v0.1.1`：远程仓库重整、历史并入、当前项目重新归档
-- `v0.2.0`：本地项目初始化器与基础目录结构
+- `v0.2.0`：GUI 骨架、本地项目初始化器、基础目录结构
 - `v0.3.0`：总纲/卷纲/剧情单元/伏笔账本生成
 - `v0.4.0`：章节卡生成与进度推进
 - `v0.5.0`：本地审校器与一致性检查
 - `v0.6.0`：外部 LLM 接口与半自动流水线
-- `v1.0.0`：可稳定使用的长篇爽文写作 MVP
+- `v1.0.0`：可稳定使用的长篇爽文写作 GUI MVP
 
-## 现在可以怎么用
+## 当前开发约定
 
-当前这版最适合做三件事：
-
-1. 作为项目蓝图确认方向。
-2. 作为 GitHub 远程备份基线。
-3. 作为实现阶段的任务依据，逐版本推进。
+- 稳定版只在 `main`
+- 正式版本都打 `tag`
+- 每个正式版本都建 `release/vX.Y.Z`
+- 新版本开发只在 `codex/vX.Y.Z`
+- 本地提交后必须同步远程分支和远程 tag
 
 ## 下一步建议
 
-下一轮优先进入 `v0.2.0`，开始落第一个可运行原型：
+下一轮优先进入 `v0.2.0`，开始落第一个可运行 GUI 原型：
 
-- `init` 项目
-- 生成基础资料目录
-- 写入总纲模板、人物模板、伏笔模板
-- 让仓库从“计划”进入“可操作”
+- 新建项目向导
+- 可配置目标字数
+- 项目状态文件
+- 总纲/人物/伏笔模板初始化
+- GUI 页面骨架
