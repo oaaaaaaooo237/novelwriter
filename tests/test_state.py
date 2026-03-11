@@ -3,7 +3,13 @@ import unittest
 import uuid
 from pathlib import Path
 
-from novel_writer.state import ProjectInitData, dashboard_summary_text, initialize_project, load_project_state
+from novel_writer.state import (
+    ProjectInitData,
+    dashboard_summary_text,
+    initialize_project,
+    load_project_state,
+    project_file_shortcuts,
+)
 
 
 class ProjectInitTests(unittest.TestCase):
@@ -39,6 +45,10 @@ class ProjectInitTests(unittest.TestCase):
             summary = dashboard_summary_text(loaded_state)
             self.assertIn(title, summary)
             self.assertIn('项目仪表盘', summary)
+
+            shortcuts = project_file_shortcuts(result.project_dir)
+            self.assertEqual(shortcuts['项目目录'], result.project_dir)
+            self.assertTrue(shortcuts['总纲模板'].exists())
         finally:
             if project_dir.exists():
                 shutil.rmtree(project_dir)

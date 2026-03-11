@@ -1,5 +1,6 @@
 ﻿from __future__ import annotations
 
+import os
 import subprocess
 import tkinter as tk
 from pathlib import Path
@@ -15,6 +16,7 @@ from .state import (
     dashboard_summary_text,
     initialize_project,
     load_project_state,
+    project_file_shortcuts,
     summarize_result,
 )
 
@@ -64,7 +66,7 @@ class App(tk.Tk):
 
         self._build_form_tab(form_tab)
         self._build_dashboard_tab(preview_tab)
-        self.release_text = self._build_text_panel(release_tab)
+        self._build_release_tab(release_tab)
 
         footer = ttk.Label(outer, textvariable=self.status_var, relief=tk.SUNKEN, anchor='w', padding=(8, 6))
         footer.pack(fill=tk.X, pady=(12, 0))
@@ -121,6 +123,19 @@ class App(tk.Tk):
         ttk.Button(action_bar, text='打开已有项目', command=self._open_project).pack(side=tk.LEFT)
         ttk.Button(action_bar, text='刷新当前项目', command=self._refresh_current_project).pack(side=tk.LEFT, padx=(8, 0))
 
+        shortcut_bar = ttk.LabelFrame(parent, text='项目快捷入口', padding=8)
+        shortcut_bar.pack(fill=tk.X, pady=(12, 12))
+        self.shortcut_buttons: dict[str, ttk.Button] = {}
+        for label in ['项目目录', '状态文件', '项目总览', '总纲模板', '人物圣经', '伏笔账本', '卷纲建议', '剧情单元']:
+            button = ttk.Button(
+                shortcut_bar,
+                text=label,
+                command=lambda current_label=label: self._open_project_shortcut(current_label),
+                state=tk.DISABLED,
+            )
+            button.pack(side=tk.LEFT, padx=(0, 8), pady=4)
+            self.shortcut_buttons[label] = button
+
         metrics_frame = ttk.LabelFrame(parent, text='项目指标', padding=12)
         metrics_frame.pack(fill=tk.X, pady=(12, 12))
 
@@ -175,6 +190,31 @@ class App(tk.Tk):
 
         self.dashboard_text = self._build_text_panel(summary_frame)
 
+    def _build_release_tab(self, parent: ttk.Frame) -> None:
+        action_bar = ttk.Frame(parent)
+        action_bar.pack(fill=tk.X)
+        ttk.Button(action_bar, text='刷新版本状态', command=self._render_release_notes).pack(side=tk.LEFT)
+
+        metrics_frame = ttk.LabelFrame(parent, text='版本隔离状态', padding=12)
+        metrics_frame.pack(fill=tk.X, pady=(12, 12))
+
+        self.release_vars = {
+            key: tk.StringVar(value='--')
+            for key in ['当前分支', '稳定分支', '归档分支', '开发分支', '版本标签', '工作区状态']
+        }
+
+        for index, key in enumerate(self.release_vars):
+            box = ttk.LabelFrame(metrics_frame, text=key, padding=8)
+            box.grid(row=index // 3, column=index % 3, sticky='nsew', padx=6, pady=6)
+            ttk.Label(box, textvariable=self.release_vars[key]).pack(anchor='w')
+
+        for column in range(3):
+            metrics_frame.columnconfigure(column, weight=1)
+
+        body_frame = ttk.LabelFrame(parent, text='版本说明', padding=8)
+        body_frame.pack(fill=tk.BOTH, expand=True)
+        self.release_text = self._build_text_panel(body_frame)
+
     def _build_text_panel(self, parent: ttk.Frame) -> tk.Text:
         frame = ttk.Frame(parent)
         frame.pack(fill=tk.BOTH, expand=True)
@@ -223,11 +263,35 @@ class App(tk.Tk):
         self.premise_text.delete('1.0', tk.END)
         self.premise_text.insert('1.0', meta.get('premise', ''))
 
+    def _set_shortcuts_enabled(self, enabled: bool) -> None:
+        state = tk.NORMAL if enabled else tk.DISABLED
+        for button in self.shortcut_buttons.values():
+            button.configure(state=state)
+
+    def _open_project_shortcut(self, label: str) -> None:
+        if self.current_project_dir is None:
+            messagebox.showwarning('尚未打开项目', '请先创建或打开一个项目。')
+            return
+
+        target = project_file_shortcuts(self.current_project_dir).get(label)
+        if target is None:
+            messagebox.showerror('快捷入口缺失', f'未找到快捷入口：{label}')
+            return
+        if not target.exists():
+            messagebox.showerror('文件不存在', f'目标不存在：\n{target}')
+            return
+
+        try:
+            os.startfile(target)  # type: ignore[attr-defined]
+        except Exception as exc:  # noqa: BLE001
+            messagebox.showerror('打开失败', f'无法打开目标：\n{target}\n\n{exc}')
+
     def _apply_dashboard_state(self, project_dir: Path, state: dict[str, Any]) -> None:
         self.current_project_dir = project_dir
         self.current_state = state
         self.project_root_var.set(str(project_dir.parent))
         self._populate_form_from_state(state)
+        self._set_shortcuts_enabled(True)
 
         for key, value in build_dashboard_metrics(state).items():
             self.dashboard_vars[key].set(value)
@@ -337,32 +401,68 @@ class App(tk.Tk):
 
     def _render_release_notes(self) -> None:
         current_branch = detect_git_branch()
+        branches = list_git_branches()
+        tags = list_git_tags()
+        release_branches = [branch for branch in branches if branch.startswith('release/')]
+        dev_branches = [branch for branch in branches if branch.startswith('codex/')]
+        worktree_status = detect_git_worktree_status()
+
+        self.release_vars['当前分支'].set(current_branch)
+        self.release_vars['稳定分支'].set('main')
+        self.release_vars['归档分支'].set('、'.join(release_branches) if release_branches else '--')
+        self.release_vars['开发分支'].set('、'.join(dev_branches) if dev_branches else '--')
+        self.release_vars['版本标签'].set('、'.join(tags[-5:]) if tags else '--')
+        self.release_vars['工作区状态'].set(worktree_status)
+
         content = (
             '版本隔离规则\n\n'
             f'- 当前 GUI 代码版本：{__version__}\n'
             f'- 当前分支：{current_branch}\n'
+            f"- 当前工作区：{worktree_status}\n"
             '- main：稳定版本\n'
             '- release/vX.Y.Z：正式归档分支\n'
             '- codex/vX.Y.Z：开发分支\n'
             '- vX.Y.Z：正式标签\n\n'
+            f"- 已发现 release 分支：{('、'.join(release_branches) if release_branches else '无')}\n"
+            f"- 已发现开发分支：{('、'.join(dev_branches) if dev_branches else '无')}\n"
+            f"- 已发现标签：{('、'.join(tags) if tags else '无')}\n\n"
             '发布原则：每次版本调整后，都要同时保留本地 Git 分支和远程 GitHub 分支 / tag。\n'
         )
         self.release_text.delete('1.0', tk.END)
         self.release_text.insert('1.0', content)
 
 
-def detect_git_branch() -> str:
+def run_git_command(args: list[str]) -> str:
     try:
         completed = subprocess.run(
-            ['git', 'branch', '--show-current'],
+            ['git', *args],
             check=True,
             capture_output=True,
             text=True,
         )
-        branch = completed.stdout.strip()
-        return branch or 'unknown'
+        return completed.stdout.strip()
     except Exception:  # noqa: BLE001
-        return 'unknown'
+        return ''
+
+
+def detect_git_branch() -> str:
+    branch = run_git_command(['branch', '--show-current'])
+    return branch or 'unknown'
+
+
+def list_git_branches() -> list[str]:
+    output = run_git_command(['branch', '--format=%(refname:short)'])
+    return [line.strip() for line in output.splitlines() if line.strip()]
+
+
+def list_git_tags() -> list[str]:
+    output = run_git_command(['tag', '--list'])
+    return [line.strip() for line in output.splitlines() if line.strip()]
+
+
+def detect_git_worktree_status() -> str:
+    output = run_git_command(['status', '--short'])
+    return '干净' if not output else '有未提交改动'
 
 
 def main() -> int:

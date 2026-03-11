@@ -228,6 +228,21 @@ def load_project_state(project_dir: Path) -> dict[str, Any]:
     return state
 
 
+def project_file_shortcuts(project_dir: Path) -> dict[str, Path]:
+    docs_dir = project_dir / 'docs'
+    return {
+        '项目目录': project_dir,
+        '状态文件': state_file_path(project_dir),
+        '项目总览': docs_dir / '00_项目总览.md',
+        '总纲模板': docs_dir / '01_总纲模板.md',
+        '人物圣经': docs_dir / '02_人物圣经.md',
+        '伏笔账本': docs_dir / '03_伏笔账本.md',
+        '卷纲建议': docs_dir / '04_卷纲建议.md',
+        '剧情单元': docs_dir / '05_剧情单元模板.md',
+        '章节卡模板': docs_dir / '06_章节卡模板.md',
+    }
+
+
 def render_overview(state: dict[str, Any]) -> str:
     meta = state['meta']
     profile = state['planning_profile']

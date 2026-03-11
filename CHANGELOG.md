@@ -15,6 +15,8 @@ The format is based on Keep a Changelog, with project-friendly semantic versions
 - minimal automated test covering project initialization
 - existing project loading flow in the GUI
 - dashboard summary and volume overview for created or loaded projects
+- project document shortcuts in the dashboard
+- visible Git branch and tag status in the release panel
 
 ### Changed
 
