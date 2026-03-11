@@ -51,7 +51,7 @@ class App(tk.Tk):
         ttk.Label(header, text='Shuangwen Pipeline', font=('Microsoft YaHei UI', 18, 'bold')).pack(anchor='w')
         ttk.Label(
             header,
-            text='长篇网文写作助手 v0.2.0 骨架：先做项目初始化、状态落盘和 GUI 工作台。',
+            text='长篇网文写作助手 v0.3.0 开发中：已具备项目初始化、规划引擎和 prompt 文件包。',
         ).pack(anchor='w', pady=(4, 0))
 
         notebook = ttk.Notebook(outer)
@@ -126,15 +126,23 @@ class App(tk.Tk):
         shortcut_bar = ttk.LabelFrame(parent, text='项目快捷入口', padding=8)
         shortcut_bar.pack(fill=tk.X, pady=(12, 12))
         self.shortcut_buttons: dict[str, ttk.Button] = {}
-        for label in ['项目目录', '状态文件', '项目总览', '总纲模板', '人物圣经', '伏笔账本', '卷纲建议', '剧情单元']:
-            button = ttk.Button(
-                shortcut_bar,
-                text=label,
-                command=lambda current_label=label: self._open_project_shortcut(current_label),
-                state=tk.DISABLED,
-            )
-            button.pack(side=tk.LEFT, padx=(0, 8), pady=4)
-            self.shortcut_buttons[label] = button
+        shortcut_groups = [
+            ['项目目录', '状态文件', '项目总览', '总纲模板', '人物圣经', '伏笔账本'],
+            ['卷纲建议', '剧情单元', '章节卡模板', '总导演提示', '单元规划提示', '章节卡提示'],
+            ['正文写作提示', '审校提示'],
+        ]
+        for row_index, labels in enumerate(shortcut_groups):
+            row = ttk.Frame(shortcut_bar)
+            row.pack(fill=tk.X, pady=(0, 6) if row_index < len(shortcut_groups) - 1 else 0)
+            for label in labels:
+                button = ttk.Button(
+                    row,
+                    text=label,
+                    command=lambda current_label=label: self._open_project_shortcut(current_label),
+                    state=tk.DISABLED,
+                )
+                button.pack(side=tk.LEFT, padx=(0, 8))
+                self.shortcut_buttons[label] = button
 
         metrics_frame = ttk.LabelFrame(parent, text='项目指标', padding=12)
         metrics_frame.pack(fill=tk.X, pady=(12, 12))

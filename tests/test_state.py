@@ -54,6 +54,10 @@ class ProjectInitTests(unittest.TestCase):
             self.assertEqual(shortcuts['项目目录'], result.project_dir)
             self.assertTrue(shortcuts['总纲模板'].exists())
             self.assertTrue(shortcuts['总导演提示'].exists())
+            self.assertTrue(shortcuts['单元规划提示'].exists())
+            self.assertTrue(shortcuts['章节卡提示'].exists())
+            self.assertTrue(shortcuts['正文写作提示'].exists())
+            self.assertTrue(shortcuts['审校提示'].exists())
 
             plot_units = loaded_state['plot_units']
             self.assertEqual(plot_units[0]['chapter_start'], 1)

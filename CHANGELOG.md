@@ -19,6 +19,7 @@ The format is based on Keep a Changelog, with project-friendly semantic versions
 - real plot-unit generation instead of static unit placeholders
 - new tests covering plot-unit continuity and scaling across target word ranges
 - prompt pack generation for director, unit planner, chapter card, writer, and reviewer roles
+- prompt shortcuts surfaced in the GUI dashboard
 
 ### Changed
 
