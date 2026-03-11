@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "shuangwen-pipeline"
-version = "0.4.0"
+version = "0.5.0.dev0"
 description = "Planning-first longform webnovel writing assistant with desktop GUI"
 readme = "README.md"
 requires-python = ">=3.11"

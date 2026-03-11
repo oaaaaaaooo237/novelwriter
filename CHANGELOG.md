@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, with project-friendly semantic versions.
 
+## [0.5.0-dev] - 2026-03-11
+
+### Planned
+
+- add local draft review heuristics
+- detect explanation-heavy writing, weak hooks, repetitive transitions, and overly neat chapter closure
+- surface review results through files and later through the GUI
+
+### Changed
+
+- bumped local development version to `0.5.0.dev0`
+- started the next isolated development branch after releasing `v0.4.0`
+
 ## [0.4.0] - 2026-03-11
 
 ### Planned
