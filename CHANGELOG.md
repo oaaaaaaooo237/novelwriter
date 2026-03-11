@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, with project-friendly semantic versions.
 
-## [0.2.0-dev] - 2026-03-11
+## [0.2.0] - 2026-03-11
 
 ### Added
 
@@ -21,7 +21,7 @@ The format is based on Keep a Changelog, with project-friendly semantic versions
 ### Changed
 
 - updated requirements, tasks, architecture, and project plan to reflect the GUI-first direction
-- bumped local development version to `0.2.0.dev0`
+- promoted the GUI prototype to the first stable `v0.2.0` release
 
 ## [0.1.1] - 2026-03-11
 
