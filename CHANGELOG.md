@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, with project-friendly semantic versions.
 
+## [0.2.0-dev] - 2026-03-11
+
+### Added
+
+- desktop GUI entry based on Tkinter for the v0.2.0 prototype
+- project initialization flow that creates a novel workspace and seed documents
+- configurable target word planning for 1-1000 wan words, optimized first for projects under 100 wan words
+- initial state model and template generation logic
+- minimal automated test covering project initialization
+
+### Changed
+
+- updated requirements, tasks, architecture, and project plan to reflect the GUI-first direction
+- bumped local development version to `0.2.0.dev0`
+
 ## [0.1.1] - 2026-03-11
 
 ### Added

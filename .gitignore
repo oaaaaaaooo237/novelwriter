@@ -24,3 +24,7 @@ Thumbs.db
 workspace/
 output/
 tmp/
+
+# Local temp project dirs
+projects/tmp*
+
