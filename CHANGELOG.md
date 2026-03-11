@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, with project-friendly semantic versions.
 
-## [0.4.0-dev] - 2026-03-11
+## [0.4.0] - 2026-03-11
 
 ### Planned
 
@@ -22,8 +22,7 @@ The format is based on Keep a Changelog, with project-friendly semantic versions
 
 ### Changed
 
-- bumped local development version to `0.4.0.dev0`
-- started the next isolated development branch after releasing `v0.3.0`
+- promoted the chapter pipeline to the first stable `v0.4.0` release
 
 ## [0.3.0] - 2026-03-11
 

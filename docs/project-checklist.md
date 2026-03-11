@@ -48,5 +48,7 @@
 - [x] generate reusable prompt pack for v0.3.0
 - [x] publish v0.3.0 stable release
 - [x] create v0.4.0 development branch
-- [ ] build chapter card generation for v0.4.0
-- [ ] add chapter progress tracking for v0.4.0
+- [x] build chapter card generation for v0.4.0
+- [x] add chapter progress tracking for v0.4.0
+- [ ] publish v0.4.0 stable release
+- [ ] create v0.5.0 development branch
