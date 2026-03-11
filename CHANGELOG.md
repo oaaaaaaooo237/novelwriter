@@ -12,6 +12,14 @@ The format is based on Keep a Changelog, with project-friendly semantic versions
 - generate next-chapter cards from volume and plot-unit context
 - add chapter progress tracking and recent event recap
 
+### Added
+
+- current chapter card generation based on current volume and plot unit
+- current chapter writing prompt generation
+- recent progress file generation
+- chapter progress updates with chapter summary, hook, and word count
+- GUI actions for refreshing chapter pipeline and advancing one chapter
+
 ### Changed
 
 - bumped local development version to `0.4.0.dev0`

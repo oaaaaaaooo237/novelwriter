@@ -10,6 +10,8 @@ from novel_writer.state import (
     initialize_project,
     load_project_state,
     project_file_shortcuts,
+    save_project_state,
+    update_story_progress,
 )
 
 
@@ -38,6 +40,8 @@ class ProjectInitTests(unittest.TestCase):
             self.assertTrue((result.project_dir / 'docs' / '04_卷纲建议.md').exists())
             self.assertTrue((result.project_dir / 'prompts' / '01_总导演提示.md').exists())
             self.assertTrue((result.project_dir / 'prompts' / '05_审校提示.md').exists())
+            self.assertTrue((result.project_dir / 'chapter_cards' / 'current_chapter_card.md').exists())
+            self.assertTrue((result.project_dir / 'prompts' / 'current_chapter_prompt.md').exists())
             self.assertEqual(result.state['meta']['target_wan_words'], 48)
             self.assertGreaterEqual(result.state['meta']['estimated_chapters'], 1)
             self.assertGreaterEqual(result.state['meta']['estimated_volumes'], 1)
@@ -58,6 +62,8 @@ class ProjectInitTests(unittest.TestCase):
             self.assertTrue(shortcuts['章节卡提示'].exists())
             self.assertTrue(shortcuts['正文写作提示'].exists())
             self.assertTrue(shortcuts['审校提示'].exists())
+            self.assertTrue(shortcuts['当前章节卡'].exists())
+            self.assertTrue(shortcuts['当前章节写作提示'].exists())
 
             plot_units = loaded_state['plot_units']
             self.assertEqual(plot_units[0]['chapter_start'], 1)
@@ -68,6 +74,14 @@ class ProjectInitTests(unittest.TestCase):
             director_prompt = shortcuts['总导演提示'].read_text(encoding='utf-8')
             self.assertIn(title, director_prompt)
             self.assertIn('总导演提示', director_prompt)
+
+            advanced = update_story_progress(loaded_state, '主角第一次试探规则边界。', '门外传来了不该出现的脚步声。', 1850)
+            save_project_state(result.project_dir, advanced)
+            reloaded = load_project_state(result.project_dir)
+            self.assertEqual(reloaded['progress']['current_chapter'], 2)
+            self.assertEqual(reloaded['progress']['completed_chapters'], 1)
+            self.assertEqual(len(reloaded['progress']['chapter_log']), 1)
+            self.assertTrue((result.project_dir / 'docs' / '07_最近进展.md').exists())
         finally:
             if project_dir.exists():
                 shutil.rmtree(project_dir)
