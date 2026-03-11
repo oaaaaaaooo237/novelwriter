@@ -48,20 +48,20 @@
 
 ### Epic 4: planning engine
 
-- [ ] 目标字数转章节规模
-- [ ] 章节规模转卷规模
-- [ ] 卷规模转剧情单元
-- [ ] 默认爽点节奏规则
-- [ ] 默认伏笔节奏规则
-- [ ] 按不同字数档位提供不同规划 profile
+- [x] 目标字数转章节规模
+- [x] 章节规模转卷规模
+- [x] 卷规模转剧情单元
+- [x] 默认爽点节奏规则
+- [x] 默认伏笔节奏规则
+- [x] 按不同字数档位提供不同规划 profile
 
 ### Epic 5: prompt structure
 
-- [ ] 总导演 prompt
-- [ ] 单元规划 prompt
-- [ ] 章节卡 prompt
-- [ ] 正文写作 prompt
-- [ ] 审校 prompt
+- [x] 总导演 prompt
+- [x] 单元规划 prompt
+- [x] 章节卡 prompt
+- [x] 正文写作 prompt
+- [x] 审校 prompt
 
 ## Milestone v0.4.0
 

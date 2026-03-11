@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, with project-friendly semantic versions.
 
+## [0.3.0] - 2026-03-11
+
+### Planned
+
+- refine planning engine for different target word ranges
+- improve chapter-count, volume-count, and plot-unit allocation
+- prepare stronger story-planning profiles for projects under 100 wan words
+
+### Added
+
+- stronger planning profiles with payoff cadence and foreshadow cadence
+- dynamic volume-role templates for opening, middle, truth, and finale phases
+- real plot-unit generation instead of static unit placeholders
+- new tests covering plot-unit continuity and scaling across target word ranges
+- prompt pack generation for director, unit planner, chapter card, writer, and reviewer roles
+- prompt shortcuts surfaced in the GUI dashboard
+
+### Changed
+
+- promoted the planning engine and prompt pack to the first stable `v0.3.0` release
+- replaced the simple volume-count heuristic with a profile-driven estimation model
+- updated project overview, volume outline, and plot-unit rendering to use the new planning data
+- project initialization now writes reusable prompt files into the `prompts/` directory
+
 ## [0.2.0] - 2026-03-11
 
 ### Added

@@ -37,7 +37,14 @@
 
 ## Next implementation gates
 
-- [ ] confirm v0.2.0 GUI scope
-- [ ] create GUI code scaffold
-- [ ] implement project initializer
-- [ ] create first generated project template
+- [x] confirm v0.2.0 GUI scope
+- [x] create GUI code scaffold
+- [x] implement project initializer
+- [x] create first generated project template
+- [x] publish v0.2.0 stable release
+- [x] create v0.3.0 development branch
+- [x] refine word-range planning engine for v0.3.0
+- [x] improve volume and plot-unit planning for v0.3.0
+- [x] generate reusable prompt pack for v0.3.0
+- [ ] publish v0.3.0 stable release
+- [ ] create v0.4.0 development branch
