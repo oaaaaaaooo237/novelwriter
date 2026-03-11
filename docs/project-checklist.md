@@ -22,7 +22,7 @@
 
 - [x] issue templates created
 - [x] pull request template created
-- [ ] remote GitHub repository connected
+- [x] remote GitHub repository connected
 - [ ] first release pushed
 
 ## Product definition

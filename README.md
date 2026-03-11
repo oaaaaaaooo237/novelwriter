@@ -14,11 +14,14 @@
 
 ## 当前阶段
 
-当前版本：`v0.1.0`
+当前版本：`v0.1.1`
 
 当前状态：项目策划与仓库骨架阶段
 
-这一版先把正式项目需要的文档、版本节奏、任务拆解、需求边界和 GitHub 协作约定落地，方便后续按版本推进实现。
+这一版完成了两件事：
+
+1. 把正式项目需要的文档、版本节奏、任务拆解、需求边界和 GitHub 协作约定落地。
+2. 把远程仓库旧历史并入当前仓库，但把当前工作树切换为新的正式项目版本，方便后续继续开发。
 
 ## 为什么先做成项目
 
@@ -55,15 +58,23 @@
 │  └─ PULL_REQUEST_TEMPLATE.md
 ├─ docs/
 │  ├─ architecture.md
+│  ├─ open-questions.md
 │  ├─ project-checklist.md
 │  ├─ project-plan.md
 │  ├─ requirements.md
 │  ├─ tasks.md
 │  └─ versioning.md
+├─ projects/
+├─ samples/
+├─ src/
+├─ templates/
+├─ tests/
 ├─ CHANGELOG.md
 ├─ CONTRIBUTING.md
+├─ LICENSE
 ├─ README.md
-└─ VERSION
+├─ VERSION
+└─ pyproject.toml
 ```
 
 ## 核心目标
@@ -82,10 +93,12 @@
 - 架构说明：[docs/architecture.md](/D:/python%20programs/codex/novel%20writer/docs/architecture.md)
 - 版本归档：[docs/versioning.md](/D:/python%20programs/codex/novel%20writer/docs/versioning.md)
 - 项目清单：[docs/project-checklist.md](/D:/python%20programs/codex/novel%20writer/docs/project-checklist.md)
+- 未决问题：[docs/open-questions.md](/D:/python%20programs/codex/novel%20writer/docs/open-questions.md)
 
 ## 版本路线
 
 - `v0.1.0`：项目策划、需求、任务、版本规范、GitHub 骨架
+- `v0.1.1`：远程仓库重整、历史并入、当前项目重新归档
 - `v0.2.0`：本地项目初始化器与基础目录结构
 - `v0.3.0`：总纲/卷纲/剧情单元/伏笔账本生成
 - `v0.4.0`：章节卡生成与进度推进
@@ -95,10 +108,11 @@
 
 ## 现在可以怎么用
 
-当前这版最适合做两件事：
+当前这版最适合做三件事：
 
 1. 作为项目蓝图确认方向。
-2. 作为实现阶段的任务依据，逐版本推进。
+2. 作为 GitHub 远程备份基线。
+3. 作为实现阶段的任务依据，逐版本推进。
 
 ## 下一步建议
 
