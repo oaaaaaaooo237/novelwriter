@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, with project-friendly semantic versions.
 
+## [0.4.0-dev] - 2026-03-11
+
+### Planned
+
+- build chapter pipeline on top of the new planning engine
+- generate next-chapter cards from volume and plot-unit context
+- add chapter progress tracking and recent event recap
+
+### Changed
+
+- bumped local development version to `0.4.0.dev0`
+- started the next isolated development branch after releasing `v0.3.0`
+
 ## [0.3.0] - 2026-03-11
 
 ### Planned

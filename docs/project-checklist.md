@@ -46,5 +46,7 @@
 - [x] refine word-range planning engine for v0.3.0
 - [x] improve volume and plot-unit planning for v0.3.0
 - [x] generate reusable prompt pack for v0.3.0
-- [ ] publish v0.3.0 stable release
-- [ ] create v0.4.0 development branch
+- [x] publish v0.3.0 stable release
+- [x] create v0.4.0 development branch
+- [ ] build chapter card generation for v0.4.0
+- [ ] add chapter progress tracking for v0.4.0
