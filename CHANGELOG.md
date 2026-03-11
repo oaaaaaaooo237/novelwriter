@@ -12,10 +12,19 @@ The format is based on Keep a Changelog, with project-friendly semantic versions
 - improve chapter-count, volume-count, and plot-unit allocation
 - prepare stronger story-planning profiles for projects under 100 wan words
 
+### Added
+
+- stronger planning profiles with payoff cadence and foreshadow cadence
+- dynamic volume-role templates for opening, middle, truth, and finale phases
+- real plot-unit generation instead of static unit placeholders
+- new tests covering plot-unit continuity and scaling across target word ranges
+
 ### Changed
 
 - bumped local development version to `0.3.0.dev0`
 - started the next isolated development branch after releasing `v0.2.0`
+- replaced the simple volume-count heuristic with a profile-driven estimation model
+- updated project overview, volume outline, and plot-unit rendering to use the new planning data
 
 ## [0.2.0] - 2026-03-11
 
