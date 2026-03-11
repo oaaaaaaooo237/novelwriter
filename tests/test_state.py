@@ -36,6 +36,8 @@ class ProjectInitTests(unittest.TestCase):
             self.assertTrue((result.project_dir / 'story_state.json').exists())
             self.assertTrue((result.project_dir / 'docs' / '01_总纲模板.md').exists())
             self.assertTrue((result.project_dir / 'docs' / '04_卷纲建议.md').exists())
+            self.assertTrue((result.project_dir / 'prompts' / '01_总导演提示.md').exists())
+            self.assertTrue((result.project_dir / 'prompts' / '05_审校提示.md').exists())
             self.assertEqual(result.state['meta']['target_wan_words'], 48)
             self.assertGreaterEqual(result.state['meta']['estimated_chapters'], 1)
             self.assertGreaterEqual(result.state['meta']['estimated_volumes'], 1)
@@ -51,12 +53,17 @@ class ProjectInitTests(unittest.TestCase):
             shortcuts = project_file_shortcuts(result.project_dir)
             self.assertEqual(shortcuts['项目目录'], result.project_dir)
             self.assertTrue(shortcuts['总纲模板'].exists())
+            self.assertTrue(shortcuts['总导演提示'].exists())
 
             plot_units = loaded_state['plot_units']
             self.assertEqual(plot_units[0]['chapter_start'], 1)
             self.assertEqual(plot_units[-1]['chapter_end'], loaded_state['meta']['estimated_chapters'])
             for previous, current in zip(plot_units, plot_units[1:]):
                 self.assertEqual(previous['chapter_end'] + 1, current['chapter_start'])
+
+            director_prompt = shortcuts['总导演提示'].read_text(encoding='utf-8')
+            self.assertIn(title, director_prompt)
+            self.assertIn('总导演提示', director_prompt)
         finally:
             if project_dir.exists():
                 shutil.rmtree(project_dir)

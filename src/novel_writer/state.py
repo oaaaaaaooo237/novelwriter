@@ -476,6 +476,7 @@ def load_project_state(project_dir: Path) -> dict[str, Any]:
 
 def project_file_shortcuts(project_dir: Path) -> dict[str, Path]:
     docs_dir = project_dir / 'docs'
+    prompts_dir = project_dir / 'prompts'
     return {
         '项目目录': project_dir,
         '状态文件': state_file_path(project_dir),
@@ -486,6 +487,11 @@ def project_file_shortcuts(project_dir: Path) -> dict[str, Path]:
         '卷纲建议': docs_dir / '04_卷纲建议.md',
         '剧情单元': docs_dir / '05_剧情单元模板.md',
         '章节卡模板': docs_dir / '06_章节卡模板.md',
+        '总导演提示': prompts_dir / '01_总导演提示.md',
+        '单元规划提示': prompts_dir / '02_单元规划提示.md',
+        '章节卡提示': prompts_dir / '03_章节卡提示.md',
+        '正文写作提示': prompts_dir / '04_正文写作提示.md',
+        '审校提示': prompts_dir / '05_审校提示.md',
     }
 
 
@@ -641,6 +647,189 @@ def render_chapter_card_template() -> str:
 """
 
 
+def render_project_context_prompt(state: dict[str, Any]) -> str:
+    meta = state['meta']
+    profile = state['planning_profile']
+    lines = [
+        f"# {meta['title']} 项目上下文",
+        '',
+        "这个文件用于给后续所有 agent 提供最小必要背景。",
+        '',
+        "## 项目基础",
+        f"- 题材：{meta['genre']}",
+        f"- 风格：{meta['style']}",
+        f"- 目标字数：{meta['target_wan_words']} 万字",
+        f"- 平均章字数：{meta['avg_chapter_words']} 字",
+        f"- 预估章节：{meta['estimated_chapters']} 章",
+        f"- 建议卷数：{meta['estimated_volumes']} 卷",
+        f"- 预估剧情单元：{meta.get('estimated_plot_units', len(state.get('plot_units', [])))} 个",
+        '',
+        "## 故事一句话",
+        meta['premise'],
+        '',
+        "## 节奏档位",
+        f"- 档位名称：{profile['label']}",
+        f"- 节奏说明：{profile['chapter_cycle']}",
+        f"- 小回报：{profile['small_payoff_cycle']}",
+        f"- 中回报：{profile['mid_payoff_cycle']}",
+        f"- 大回报：{profile['big_payoff_cycle']}",
+        f"- 伏笔节奏：{profile['foreshadow_cycle']}",
+        '',
+        "## 卷规划摘要",
+    ]
+    for volume in state['volumes']:
+        lines.append(
+            f"- {volume['title']}：{volume['chapter_start']}-{volume['chapter_end']} 章，角色={volume['role']}，重点={volume['focus']}"
+        )
+    return '\n'.join(lines) + '\n'
+
+
+def render_director_prompt(state: dict[str, Any]) -> str:
+    meta = state['meta']
+    profile = state['planning_profile']
+    lines = [
+        f"# {meta['title']} 总导演提示",
+        '',
+        "你的职责不是直接写正文，而是保证整本书的长线爽点结构成立。",
+        "你要把控：卖点、卷级节奏、信息差、伏笔回收、身份升级、卷末钩子。",
+        '',
+        "## 输出目标",
+        "- 如果当前卷或单元设计偏弱，先指出结构问题，再提出重排建议。",
+        "- 所有建议都必须服务长篇追读感，而不是单章完整闭环。",
+        "- 每卷都要有独立问题，但卷末必须把下一卷的风险抬高。",
+        '',
+        "## 当前项目",
+        f"- 题材：{meta['genre']}",
+        f"- 风格：{meta['style']}",
+        f"- 目标字数：{meta['target_wan_words']} 万字",
+        f"- 节奏档位：{profile['label']}",
+        f"- 核心 premise：{meta['premise']}",
+        '',
+        "## 节奏硬规则",
+        f"- 小回报：{profile['small_payoff_cycle']}",
+        f"- 中回报：{profile['mid_payoff_cycle']}",
+        f"- 大回报：{profile['big_payoff_cycle']}",
+        f"- 伏笔节奏：{profile['foreshadow_cycle']}",
+        '',
+        "## 输出格式",
+        "1. 当前结构判断",
+        "2. 风险点",
+        "3. 调整建议",
+        "4. 如果需要，给新的卷级推进方案",
+    ]
+    return '\n'.join(lines) + '\n'
+
+
+def render_unit_planner_prompt(state: dict[str, Any]) -> str:
+    meta = state['meta']
+    lines = [
+        f"# {meta['title']} 单元规划提示",
+        '',
+        "你负责把卷级目标拆成多个剧情单元，每个单元一般覆盖数章到十几章。",
+        "不要把单元写成单章故事清单，而要保证一个单元本身就是连续拉扯。",
+        '',
+        "## 你必须完成",
+        "- 识别当前卷属于 opening / expansion / middle / truth / finale 哪种角色。",
+        "- 根据卷内目标，把章节范围拆成多个单元。",
+        "- 每个单元都要有：目的、冲突、阶段回报、与下一单元的衔接。",
+        '',
+        "## 项目摘要",
+        f"- 题材：{meta['genre']}",
+        f"- 风格：{meta['style']}",
+        f"- premise：{meta['premise']}",
+        '',
+        "## 输出格式",
+        "| 单元 | 章节范围 | 目的 | 关键冲突 | 阶段回报 | 结尾悬念 |",
+    ]
+    return '\n'.join(lines) + '\n'
+
+
+def render_chapter_card_prompt(state: dict[str, Any]) -> str:
+    profile = state['planning_profile']
+    lines = [
+        f"# {state['meta']['title']} 章节卡提示",
+        '',
+        "你负责根据当前剧情单元，生成单章章节卡。",
+        "章节卡优先服务节奏与信息差，不追求把一章写成一个完整短篇。",
+        '',
+        "## 章节卡必须包含",
+        "- 本章目的",
+        "- 本章冲突",
+        "- 本章信息释放",
+        "- 本章伏笔推进",
+        "- 本章不能说破的内容",
+        "- 本章结尾钩子",
+        '',
+        "## 节奏提醒",
+        f"- 小回报：{profile['small_payoff_cycle']}",
+        f"- 中回报：{profile['mid_payoff_cycle']}",
+        f"- 大回报：{profile['big_payoff_cycle']}",
+        '',
+        "## 章节卡规则",
+        "- 不要每章都起承转合完整闭环。",
+        "- 不要在章节卡里提前泄露单元后半段才该说出的内容。",
+        "- 结尾钩子必须能把读者拽进下一章。",
+    ]
+    return '\n'.join(lines) + '\n'
+
+
+def render_writer_prompt(state: dict[str, Any]) -> str:
+    profile = state['planning_profile']
+    lines = [
+        f"# {state['meta']['title']} 正文写作提示",
+        '',
+        "你只负责根据章节卡写当前章节正文，不负责重写总纲和卷纲。",
+        '',
+        "## 写作目标",
+        "- 保持角色行动感，不要大量讲解设定。",
+        "- 保持跨章悬念，不要把问题在本章收死。",
+        "- 保持情绪回报密度，尤其注意小回报和中回报的间隔。",
+        '',
+        "## 节奏基线",
+        f"- 小回报：{profile['small_payoff_cycle']}",
+        f"- 中回报：{profile['mid_payoff_cycle']}",
+        f"- 大回报：{profile['big_payoff_cycle']}",
+        '',
+        "## 禁止事项",
+        "- 不要反复总结前文。",
+        "- 不要让所有人物说话一个腔调。",
+        "- 不要强行解释所有疑点。",
+        "- 不要把每章都写成干净结尾。",
+        '',
+        "输出时只给正文，不要附解释。",
+    ]
+    return '\n'.join(lines) + '\n'
+
+
+def render_reviewer_prompt(state: dict[str, Any]) -> str:
+    profile = state['planning_profile']
+    lines = [
+        f"# {state['meta']['title']} 审校提示",
+        '',
+        "你负责审校章节草稿，重点检查是否出现明显 AI 味和节奏问题。",
+        '',
+        "## 重点检查",
+        "- 是否像一章一个完整小故事",
+        "- 是否解释过满",
+        "- 是否结尾钩子太弱",
+        "- 是否重复使用同一类转场和总结句式",
+        "- 是否人物失去区分度",
+        "- 是否提前说破本应后置的伏笔信息",
+        '',
+        "## 参考节奏",
+        f"- 小回报：{profile['small_payoff_cycle']}",
+        f"- 中回报：{profile['mid_payoff_cycle']}",
+        f"- 大回报：{profile['big_payoff_cycle']}",
+        '',
+        "## 输出格式",
+        "1. 结构问题",
+        "2. 风险等级",
+        "3. 修改建议",
+        "4. 如果结尾偏弱，给出一个更强的结尾版本",
+    ]
+    return '\n'.join(lines) + '\n'
+
+
 def build_dashboard_metrics(state: dict[str, Any]) -> dict[str, str]:
     meta = state['meta']
     profile = state['planning_profile']
@@ -725,7 +914,13 @@ def write_project_files(project_dir: Path, state: dict[str, Any]) -> list[Path]:
         project_dir / 'docs' / '04_卷纲建议.md': render_volumes(state),
         project_dir / 'docs' / '05_剧情单元模板.md': render_plot_units(state),
         project_dir / 'docs' / '06_章节卡模板.md': render_chapter_card_template(),
-        project_dir / 'prompts' / 'README.md': '# Prompts\n\n后续版本会在这里生成或维护 agent prompt。\n',
+        project_dir / 'prompts' / '00_项目上下文.md': render_project_context_prompt(state),
+        project_dir / 'prompts' / '01_总导演提示.md': render_director_prompt(state),
+        project_dir / 'prompts' / '02_单元规划提示.md': render_unit_planner_prompt(state),
+        project_dir / 'prompts' / '03_章节卡提示.md': render_chapter_card_prompt(state),
+        project_dir / 'prompts' / '04_正文写作提示.md': render_writer_prompt(state),
+        project_dir / 'prompts' / '05_审校提示.md': render_reviewer_prompt(state),
+        project_dir / 'prompts' / 'README.md': '# Prompts\n\n当前版本已经生成总导演、单元规划、章节卡、正文写作和审校提示。\n',
     }
 
     for path, content in file_map.items():
@@ -757,6 +952,7 @@ def summarize_result(result: ProjectResult) -> str:
         f"平均章字数：{meta['avg_chapter_words']} 字",
         f"预估章节：{meta['estimated_chapters']} 章",
         f"建议卷数：{meta['estimated_volumes']} 卷",
+        f"预估剧情单元：{meta.get('estimated_plot_units', len(result.state.get('plot_units', [])))} 个",
         f"规划档位：{profile['label']}",
         f"节奏建议：{profile['chapter_cycle']}",
         '',
@@ -772,6 +968,7 @@ def state_preview(state: dict[str, Any]) -> str:
         'meta': state['meta'],
         'planning_profile': state['planning_profile'],
         'volumes': state['volumes'],
+        'plot_units': state.get('plot_units', []),
     }
     return json.dumps(payload, ensure_ascii=False, indent=2)
 

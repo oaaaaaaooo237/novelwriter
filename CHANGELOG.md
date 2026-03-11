@@ -18,6 +18,7 @@ The format is based on Keep a Changelog, with project-friendly semantic versions
 - dynamic volume-role templates for opening, middle, truth, and finale phases
 - real plot-unit generation instead of static unit placeholders
 - new tests covering plot-unit continuity and scaling across target word ranges
+- prompt pack generation for director, unit planner, chapter card, writer, and reviewer roles
 
 ### Changed
 
@@ -25,6 +26,7 @@ The format is based on Keep a Changelog, with project-friendly semantic versions
 - started the next isolated development branch after releasing `v0.2.0`
 - replaced the simple volume-count heuristic with a profile-driven estimation model
 - updated project overview, volume outline, and plot-unit rendering to use the new planning data
+- project initialization now writes reusable prompt files into the `prompts/` directory
 
 ## [0.2.0] - 2026-03-11
 

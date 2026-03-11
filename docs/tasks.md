@@ -57,11 +57,11 @@
 
 ### Epic 5: prompt structure
 
-- [ ] 总导演 prompt
-- [ ] 单元规划 prompt
-- [ ] 章节卡 prompt
-- [ ] 正文写作 prompt
-- [ ] 审校 prompt
+- [x] 总导演 prompt
+- [x] 单元规划 prompt
+- [x] 章节卡 prompt
+- [x] 正文写作 prompt
+- [x] 审校 prompt
 
 ## Milestone v0.4.0
 
