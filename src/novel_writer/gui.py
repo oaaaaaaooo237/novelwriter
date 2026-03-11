@@ -4,9 +4,19 @@ import subprocess
 import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
+from typing import Any
 
 from . import __version__
-from .state import DEFAULT_STYLE, GENRES, ProjectInitData, initialize_project, summarize_result
+from .state import (
+    DEFAULT_STYLE,
+    GENRES,
+    ProjectInitData,
+    build_dashboard_metrics,
+    dashboard_summary_text,
+    initialize_project,
+    load_project_state,
+    summarize_result,
+)
 
 
 class App(tk.Tk):
@@ -23,6 +33,8 @@ class App(tk.Tk):
         self.target_wan_var = tk.IntVar(value=50)
         self.chapter_words_var = tk.IntVar(value=2000)
         self.style_var = tk.StringVar(value=DEFAULT_STYLE)
+        self.current_project_dir: Path | None = None
+        self.current_state: dict[str, Any] | None = None
 
         self._build_layout()
         self._render_release_notes()
@@ -47,11 +59,11 @@ class App(tk.Tk):
         preview_tab = ttk.Frame(notebook, padding=16)
         release_tab = ttk.Frame(notebook, padding=16)
         notebook.add(form_tab, text='新建项目')
-        notebook.add(preview_tab, text='项目预览')
+        notebook.add(preview_tab, text='项目仪表盘')
         notebook.add(release_tab, text='版本规则')
 
         self._build_form_tab(form_tab)
-        self.preview_text = self._build_text_panel(preview_tab)
+        self._build_dashboard_tab(preview_tab)
         self.release_text = self._build_text_panel(release_tab)
 
         footer = ttk.Label(outer, textvariable=self.status_var, relief=tk.SUNKEN, anchor='w', padding=(8, 6))
@@ -99,8 +111,69 @@ class App(tk.Tk):
         action_bar = ttk.Frame(parent)
         action_bar.grid(row=6, column=0, columnspan=4, sticky='ew')
         ttk.Button(action_bar, text='创建项目', command=self._create_project).pack(side=tk.LEFT)
+        ttk.Button(action_bar, text='打开已有项目', command=self._open_project).pack(side=tk.LEFT, padx=(8, 0))
         ttk.Button(action_bar, text='填充示例', command=self._fill_demo).pack(side=tk.LEFT, padx=(8, 0))
         ttk.Button(action_bar, text='清空表单', command=self._reset_form).pack(side=tk.LEFT, padx=(8, 0))
+
+    def _build_dashboard_tab(self, parent: ttk.Frame) -> None:
+        action_bar = ttk.Frame(parent)
+        action_bar.pack(fill=tk.X)
+        ttk.Button(action_bar, text='打开已有项目', command=self._open_project).pack(side=tk.LEFT)
+        ttk.Button(action_bar, text='刷新当前项目', command=self._refresh_current_project).pack(side=tk.LEFT, padx=(8, 0))
+
+        metrics_frame = ttk.LabelFrame(parent, text='项目指标', padding=12)
+        metrics_frame.pack(fill=tk.X, pady=(12, 12))
+
+        self.dashboard_vars = {
+            key: tk.StringVar(value='--')
+            for key in [
+                '书名',
+                '题材',
+                '风格',
+                '目标规模',
+                '平均章字数',
+                '预估章节',
+                '建议卷数',
+                '当前进度',
+                '规划档位',
+            ]
+        }
+
+        for index, key in enumerate(self.dashboard_vars):
+            box = ttk.LabelFrame(metrics_frame, text=key, padding=8)
+            box.grid(row=index // 3, column=index % 3, sticky='nsew', padx=6, pady=6)
+            ttk.Label(box, textvariable=self.dashboard_vars[key]).pack(anchor='w')
+
+        for column in range(3):
+            metrics_frame.columnconfigure(column, weight=1)
+
+        content_pane = ttk.Panedwindow(parent, orient=tk.VERTICAL)
+        content_pane.pack(fill=tk.BOTH, expand=True)
+
+        volume_frame = ttk.LabelFrame(content_pane, text='卷规划概览', padding=8)
+        summary_frame = ttk.LabelFrame(content_pane, text='项目摘要', padding=8)
+        content_pane.add(volume_frame, weight=3)
+        content_pane.add(summary_frame, weight=2)
+
+        columns = ('title', 'range', 'words', 'goal')
+        self.volume_tree = ttk.Treeview(volume_frame, columns=columns, show='headings', height=10)
+        headings = {
+            'title': '卷名',
+            'range': '章节范围',
+            'words': '建议字数',
+            'goal': '卷内任务',
+        }
+        widths = {'title': 220, 'range': 120, 'words': 110, 'goal': 420}
+        for column in columns:
+            self.volume_tree.heading(column, text=headings[column])
+            self.volume_tree.column(column, width=widths[column], anchor='w')
+
+        volume_scrollbar = ttk.Scrollbar(volume_frame, orient='vertical', command=self.volume_tree.yview)
+        self.volume_tree.configure(yscrollcommand=volume_scrollbar.set)
+        self.volume_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        volume_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.dashboard_text = self._build_text_panel(summary_frame)
 
     def _build_text_panel(self, parent: ttk.Frame) -> tk.Text:
         frame = ttk.Frame(parent)
@@ -139,6 +212,76 @@ class App(tk.Tk):
         self.style_var.set(DEFAULT_STYLE)
         self.premise_text.delete('1.0', tk.END)
         self.status_var.set('表单已清空。')
+
+    def _populate_form_from_state(self, state: dict[str, Any]) -> None:
+        meta = state.get('meta', {})
+        self.title_var.set(meta.get('title', ''))
+        self.genre_var.set(meta.get('genre', GENRES[0]))
+        self.target_wan_var.set(meta.get('target_wan_words', 50))
+        self.chapter_words_var.set(meta.get('avg_chapter_words', 2000))
+        self.style_var.set(meta.get('style', DEFAULT_STYLE))
+        self.premise_text.delete('1.0', tk.END)
+        self.premise_text.insert('1.0', meta.get('premise', ''))
+
+    def _apply_dashboard_state(self, project_dir: Path, state: dict[str, Any]) -> None:
+        self.current_project_dir = project_dir
+        self.current_state = state
+        self.project_root_var.set(str(project_dir.parent))
+        self._populate_form_from_state(state)
+
+        for key, value in build_dashboard_metrics(state).items():
+            self.dashboard_vars[key].set(value)
+
+        for item_id in self.volume_tree.get_children():
+            self.volume_tree.delete(item_id)
+
+        for volume in state.get('volumes', []):
+            self.volume_tree.insert(
+                '',
+                tk.END,
+                values=(
+                    volume['title'],
+                    f"{volume['chapter_start']}-{volume['chapter_end']}",
+                    f"{volume['suggested_words']:,}",
+                    volume.get('goal', '待填写'),
+                ),
+            )
+
+        self.dashboard_text.delete('1.0', tk.END)
+        self.dashboard_text.insert('1.0', dashboard_summary_text(state))
+        self.status_var.set(f'已载入项目：{project_dir}')
+
+    def _open_project(self) -> None:
+        initial_dir = self.project_root_var.get() or str((Path.cwd() / 'projects').resolve())
+        path = filedialog.askdirectory(initialdir=initial_dir)
+        if not path:
+            return
+
+        project_dir = Path(path)
+        try:
+            state = load_project_state(project_dir)
+        except FileNotFoundError as exc:
+            messagebox.showerror('不是有效项目', str(exc))
+            return
+        except Exception as exc:  # noqa: BLE001
+            messagebox.showerror('打开失败', f'读取项目时出错：\n{exc}')
+            return
+
+        self._apply_dashboard_state(project_dir, state)
+        messagebox.showinfo('打开成功', f'已载入项目：\n{project_dir}')
+
+    def _refresh_current_project(self) -> None:
+        if self.current_project_dir is None:
+            messagebox.showwarning('尚未打开项目', '请先创建或打开一个项目。')
+            return
+
+        try:
+            state = load_project_state(self.current_project_dir)
+        except Exception as exc:  # noqa: BLE001
+            messagebox.showerror('刷新失败', f'重新加载项目时出错：\n{exc}')
+            return
+
+        self._apply_dashboard_state(self.current_project_dir, state)
 
     def _create_project(self) -> None:
         title = self.title_var.get().strip()
@@ -188,9 +331,8 @@ class App(tk.Tk):
             messagebox.showerror('创建失败', str(exc))
             return
 
-        self.preview_text.delete('1.0', tk.END)
-        self.preview_text.insert('1.0', summarize_result(result))
-        self.status_var.set(f'项目已创建：{result.project_dir}')
+        self._apply_dashboard_state(result.project_dir, result.state)
+        self.dashboard_text.insert(tk.END, '\n## 创建结果\n' + summarize_result(result))
         messagebox.showinfo('创建成功', f'项目已创建：\n{result.project_dir}')
 
     def _render_release_notes(self) -> None:

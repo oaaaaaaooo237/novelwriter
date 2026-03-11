@@ -21,6 +21,7 @@ GENRES = [
 ]
 
 DEFAULT_STYLE = '番茄系强钩子爽文'
+STATE_FILENAME = 'story_state.json'
 INVALID_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*]')
 VOLUME_TITLES = [
     '开篇立钩',
@@ -206,6 +207,27 @@ def build_story_state(data: ProjectInitData, project_dir: Path) -> dict[str, Any
     }
 
 
+def state_file_path(project_dir: Path) -> Path:
+    return project_dir / STATE_FILENAME
+
+
+def load_project_state(project_dir: Path) -> dict[str, Any]:
+    path = state_file_path(project_dir)
+    if not path.exists():
+        raise FileNotFoundError(f'未找到项目状态文件：{path}')
+
+    state = json.loads(path.read_text(encoding='utf-8'))
+    state.setdefault('meta', {})
+    state.setdefault('planning_profile', {})
+    state.setdefault('progress', {})
+    state.setdefault('volumes', [])
+    state['meta'].setdefault('project_dir', str(project_dir))
+    state['progress'].setdefault('current_chapter', 1)
+    state['progress'].setdefault('completed_chapters', 0)
+    state['progress'].setdefault('completed_words', 0)
+    return state
+
+
 def render_overview(state: dict[str, Any]) -> str:
     meta = state['meta']
     profile = state['planning_profile']
@@ -352,6 +374,63 @@ def render_chapter_card_template() -> str:
 """
 
 
+def build_dashboard_metrics(state: dict[str, Any]) -> dict[str, str]:
+    meta = state['meta']
+    profile = state['planning_profile']
+    progress = state['progress']
+    return {
+        '书名': meta.get('title', '--'),
+        '题材': meta.get('genre', '--'),
+        '风格': meta.get('style', '--'),
+        '目标规模': f"{meta.get('target_wan_words', '--')} 万字",
+        '平均章字数': f"{meta.get('avg_chapter_words', '--')} 字",
+        '预估章节': f"{meta.get('estimated_chapters', '--')} 章",
+        '建议卷数': f"{meta.get('estimated_volumes', '--')} 卷",
+        '当前进度': f"第{progress.get('current_chapter', 1)}章 / 已完成 {progress.get('completed_chapters', 0)} 章",
+        '规划档位': profile.get('label', '--'),
+    }
+
+
+def dashboard_summary_text(state: dict[str, Any]) -> str:
+    meta = state['meta']
+    profile = state['planning_profile']
+    progress = state['progress']
+    lines = [
+        f"# {meta.get('title', '未命名项目')} 项目仪表盘",
+        '',
+        "## 基础信息",
+        f"- 题材：{meta.get('genre', '--')}",
+        f"- 风格：{meta.get('style', '--')}",
+        f"- 目标字数：{meta.get('target_words', 0):,} 字（{meta.get('target_wan_words', '--')} 万字）",
+        f"- 平均章字数：{meta.get('avg_chapter_words', '--')} 字",
+        f"- 预估章节：{meta.get('estimated_chapters', '--')} 章",
+        f"- 建议卷数：{meta.get('estimated_volumes', '--')} 卷",
+        f"- 创建时间：{meta.get('created_at', '--')}",
+        '',
+        "## 当前进度",
+        f"- 当前章节：第{progress.get('current_chapter', 1)}章",
+        f"- 已完成章节：{progress.get('completed_chapters', 0)}章",
+        f"- 已完成字数：{progress.get('completed_words', 0):,} 字",
+        '',
+        "## 规划档位",
+        f"- 档位名称：{profile.get('label', '--')}",
+        f"- 节奏建议：{profile.get('chapter_cycle', '--')}",
+        f"- 策略重点：{profile.get('focus', '--')}",
+        '',
+        "## 故事一句话",
+        meta.get('premise', '待填写。'),
+        '',
+        "## 当前卷规划预览",
+    ]
+    for volume in state.get('volumes', [])[:6]:
+        lines.append(
+            f"- {volume['title']}：{volume['chapter_start']}-{volume['chapter_end']} 章，建议 {volume['suggested_words']:,} 字"
+        )
+    if len(state.get('volumes', [])) > 6:
+        lines.append(f"- 其余 {len(state['volumes']) - 6} 卷可在卷规划表中继续查看。")
+    return '\n'.join(lines) + '\n'
+
+
 def write_project_files(project_dir: Path, state: dict[str, Any]) -> list[Path]:
     created: list[Path] = []
     for folder in [
@@ -365,7 +444,7 @@ def write_project_files(project_dir: Path, state: dict[str, Any]) -> list[Path]:
         folder.mkdir(parents=True, exist_ok=True)
 
     file_map = {
-        project_dir / 'story_state.json': json.dumps(state, ensure_ascii=False, indent=2),
+        state_file_path(project_dir): json.dumps(state, ensure_ascii=False, indent=2),
         project_dir / 'docs' / '00_项目总览.md': render_overview(state),
         project_dir / 'docs' / '01_总纲模板.md': render_master_outline(state),
         project_dir / 'docs' / '02_人物圣经.md': render_character_bible(),

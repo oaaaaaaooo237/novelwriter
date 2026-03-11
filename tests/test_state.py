@@ -3,7 +3,7 @@ import unittest
 import uuid
 from pathlib import Path
 
-from novel_writer.state import ProjectInitData, initialize_project
+from novel_writer.state import ProjectInitData, dashboard_summary_text, initialize_project, load_project_state
 
 
 class ProjectInitTests(unittest.TestCase):
@@ -32,6 +32,13 @@ class ProjectInitTests(unittest.TestCase):
             self.assertEqual(result.state['meta']['target_wan_words'], 48)
             self.assertGreaterEqual(result.state['meta']['estimated_chapters'], 1)
             self.assertGreaterEqual(result.state['meta']['estimated_volumes'], 1)
+
+            loaded_state = load_project_state(result.project_dir)
+            self.assertEqual(loaded_state['meta']['title'], title)
+
+            summary = dashboard_summary_text(loaded_state)
+            self.assertIn(title, summary)
+            self.assertIn('项目仪表盘', summary)
         finally:
             if project_dir.exists():
                 shutil.rmtree(project_dir)

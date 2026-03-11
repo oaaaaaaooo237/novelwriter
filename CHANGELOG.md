@@ -13,6 +13,8 @@ The format is based on Keep a Changelog, with project-friendly semantic versions
 - configurable target word planning for 1-1000 wan words, optimized first for projects under 100 wan words
 - initial state model and template generation logic
 - minimal automated test covering project initialization
+- existing project loading flow in the GUI
+- dashboard summary and volume overview for created or loaded projects
 
 ### Changed
 
