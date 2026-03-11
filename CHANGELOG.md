@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, with project-friendly semantic versions.
 
-## [0.3.0-dev] - 2026-03-11
+## [0.3.0] - 2026-03-11
 
 ### Planned
 
@@ -23,8 +23,7 @@ The format is based on Keep a Changelog, with project-friendly semantic versions
 
 ### Changed
 
-- bumped local development version to `0.3.0.dev0`
-- started the next isolated development branch after releasing `v0.2.0`
+- promoted the planning engine and prompt pack to the first stable `v0.3.0` release
 - replaced the simple volume-count heuristic with a profile-driven estimation model
 - updated project overview, volume outline, and plot-unit rendering to use the new planning data
 - project initialization now writes reusable prompt files into the `prompts/` directory

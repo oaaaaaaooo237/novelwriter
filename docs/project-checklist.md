@@ -43,5 +43,8 @@
 - [x] create first generated project template
 - [x] publish v0.2.0 stable release
 - [x] create v0.3.0 development branch
-- [ ] refine word-range planning engine for v0.3.0
-- [ ] improve volume and plot-unit planning for v0.3.0
+- [x] refine word-range planning engine for v0.3.0
+- [x] improve volume and plot-unit planning for v0.3.0
+- [x] generate reusable prompt pack for v0.3.0
+- [ ] publish v0.3.0 stable release
+- [ ] create v0.4.0 development branch

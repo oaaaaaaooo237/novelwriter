@@ -64,8 +64,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\publish_release.ps1 -Version 
 当前已经具备：
 
 - `main`
-- `release/v0.2.0`
-- `codex/v0.3.0`
+- `release/v0.3.0`
+- `codex/v0.4.0`
 - `v0.1.0`
 - `v0.1.1`
 - `v0.2.0`
+- `v0.3.0`
