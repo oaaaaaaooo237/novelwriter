@@ -6,6 +6,7 @@ import re
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
+from statistics import pstdev
 from typing import Any
 
 GENRES = [
@@ -195,6 +196,48 @@ UNIT_TEMPLATE_LIBRARY = {
         {'title': '旧账清算', 'purpose': '把前文埋下的人物账和因果账集中兑现。', 'payoff': '终局前资源与关系完成重排。'},
         {'title': '终局翻盘', 'purpose': '让前文长期积累的选择和伏笔一起结算。', 'payoff': '完成主线最大的情绪回报。'},
         {'title': '结局反证', 'purpose': '证明主角赢的不只是战斗结果。', 'payoff': '交代新秩序或结局代价。'},
+    ],
+}
+
+REVIEW_PATTERNS = {
+    'explanation_markers': [
+        '总之',
+        '换句话说',
+        '说到底',
+        '归根结底',
+        '也就是说',
+        '简而言之',
+    ],
+    'closure_markers': [
+        '一切尘埃落定',
+        '事情终于告一段落',
+        '事情到此为止',
+        '总算结束了',
+        '这一页就此翻过',
+    ],
+    'transition_markers': [
+        '然而',
+        '与此同时',
+        '下一刻',
+        '很快',
+        '此刻',
+        '紧接着',
+    ],
+    'hook_markers': [
+        '但',
+        '然而',
+        '只是',
+        '可',
+        '没想到',
+        '门外',
+        '脚步声',
+        '名字',
+        '消息',
+        '异变',
+        '追杀',
+        '失控',
+        '古纹',
+        '信物',
     ],
 }
 
@@ -480,6 +523,7 @@ def project_file_shortcuts(project_dir: Path) -> dict[str, Path]:
     docs_dir = project_dir / 'docs'
     prompts_dir = project_dir / 'prompts'
     chapter_cards_dir = project_dir / 'chapter_cards'
+    reviews_dir = project_dir / 'reviews'
     return {
         '项目目录': project_dir,
         '状态文件': state_file_path(project_dir),
@@ -491,6 +535,7 @@ def project_file_shortcuts(project_dir: Path) -> dict[str, Path]:
         '剧情单元': docs_dir / '05_剧情单元模板.md',
         '章节卡模板': docs_dir / '06_章节卡模板.md',
         '最近进展': docs_dir / '07_最近进展.md',
+        '审校目录': reviews_dir,
         '当前章节卡': chapter_cards_dir / 'current_chapter_card.md',
         '总导演提示': prompts_dir / '01_总导演提示.md',
         '单元规划提示': prompts_dir / '02_单元规划提示.md',
@@ -834,6 +879,113 @@ def render_reviewer_prompt(state: dict[str, Any]) -> str:
         "4. 如果结尾偏弱，给出一个更强的结尾版本",
     ]
     return '\n'.join(lines) + '\n'
+
+
+def review_output_path(project_dir: Path, draft_path: Path) -> Path:
+    return project_dir / 'reviews' / f'{draft_path.stem}_review.md'
+
+
+def analyze_draft_text(text: str) -> list[dict[str, str]]:
+    findings: list[dict[str, str]] = []
+    body = text.strip()
+
+    for phrase in REVIEW_PATTERNS['explanation_markers']:
+        count = text.count(phrase)
+        if count >= 2:
+            findings.append(
+                {
+                    'title': '解释过满',
+                    'severity': '中',
+                    'detail': f'解释型提示词“{phrase}”出现 {count} 次，容易产生讲解感过强的问题。',
+                }
+            )
+            break
+
+    for phrase in REVIEW_PATTERNS['transition_markers']:
+        count = text.count(phrase)
+        if count >= 5:
+            findings.append(
+                {
+                    'title': '重复句式',
+                    'severity': '中',
+                    'detail': f'转场词“{phrase}”出现 {count} 次，读感容易模板化。',
+                }
+            )
+            break
+
+    tail = body[-220:] if body else ''
+    for phrase in REVIEW_PATTERNS['closure_markers']:
+        if phrase in tail:
+            findings.append(
+                {
+                    'title': '章节收口过满',
+                    'severity': '高',
+                    'detail': f'结尾附近出现“{phrase}”，像把阶段问题彻底收死，不利于跨章追读。',
+                }
+            )
+            break
+
+    if tail and not any(marker in tail for marker in REVIEW_PATTERNS['hook_markers']):
+        findings.append(
+            {
+                'title': '弱钩子',
+                'severity': '高',
+                'detail': '结尾缺少明显的新威胁、新发现或新选择标记，下一章驱动力偏弱。',
+            }
+        )
+
+    paragraphs = [segment.strip() for segment in text.splitlines() if segment.strip()]
+    if len(paragraphs) >= 5:
+        lengths = [len(item) for item in paragraphs]
+        if pstdev(lengths) < 35:
+            findings.append(
+                {
+                    'title': '节奏过匀',
+                    'severity': '中',
+                    'detail': '段落长度过于平均，信息密度和呼吸节奏容易显得机械。',
+                }
+            )
+
+    if not findings:
+        findings.append(
+            {
+                'title': '未发现明显结构问题',
+                'severity': '低',
+                'detail': '本次启发式审校没有抓到明显问题，但仍建议人工复核人物声线和伏笔信息差。',
+            }
+        )
+
+    return findings
+
+
+def render_review_report(project_title: str, draft_path: Path, findings: list[dict[str, str]]) -> str:
+    lines = [
+        f"# {draft_path.name} 审校报告",
+        '',
+        f"- 项目：{project_title}",
+        f"- 草稿：{draft_path}",
+        f"- 生成时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        '',
+    ]
+    for index, finding in enumerate(findings, start=1):
+        lines.extend(
+            [
+                f"## {index}. {finding['title']}",
+                f"- 风险等级：{finding['severity']}",
+                f"- 说明：{finding['detail']}",
+                '',
+            ]
+        )
+    return '\n'.join(lines).rstrip() + '\n'
+
+
+def review_draft_file(project_dir: Path, state: dict[str, Any], draft_path: Path) -> Path:
+    text = draft_path.read_text(encoding='utf-8')
+    findings = analyze_draft_text(text)
+    out_path = review_output_path(project_dir, draft_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(render_review_report(state['meta']['title'], draft_path, findings), encoding='utf-8')
+    return out_path
 
 
 def current_volume(state: dict[str, Any], chapter_number: int | None = None) -> dict[str, Any]:

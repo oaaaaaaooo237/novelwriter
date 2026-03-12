@@ -12,6 +12,12 @@ The format is based on Keep a Changelog, with project-friendly semantic versions
 - detect explanation-heavy writing, weak hooks, repetitive transitions, and overly neat chapter closure
 - surface review results through files and later through the GUI
 
+### Added
+
+- local review heuristics for explanation-heavy writing, repeated transitions, overly neat closure, weak hooks, and overly even pacing
+- review report generation into the `reviews/` directory
+- GUI entry for selecting a draft and generating a local review report
+
 ### Changed
 
 - bumped local development version to `0.5.0.dev0`

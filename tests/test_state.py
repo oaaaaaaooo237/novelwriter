@@ -5,11 +5,13 @@ from pathlib import Path
 
 from novel_writer.state import (
     ProjectInitData,
+    analyze_draft_text,
     build_story_state,
     dashboard_summary_text,
     initialize_project,
     load_project_state,
     project_file_shortcuts,
+    review_draft_file,
     save_project_state,
     update_story_progress,
 )
@@ -82,6 +84,27 @@ class ProjectInitTests(unittest.TestCase):
             self.assertEqual(reloaded['progress']['completed_chapters'], 1)
             self.assertEqual(len(reloaded['progress']['chapter_log']), 1)
             self.assertTrue((result.project_dir / 'docs' / '07_最近进展.md').exists())
+
+            draft_path = result.project_dir / 'chapters' / 'chapter_001.md'
+            draft_path.write_text(
+                '\n'.join(
+                    [
+                        '总之，他知道这件事没有那么简单。',
+                        '然而下一刻，他还是抬起了头。',
+                        '与此同时，门外又传来脚步声。',
+                        '然而他没有退。',
+                        '然而那道声音更近了。',
+                        '然而事情并没有结束。',
+                        '事情终于告一段落。',
+                    ]
+                ),
+                encoding='utf-8',
+            )
+            review_path = review_draft_file(result.project_dir, reloaded, draft_path)
+            self.assertTrue(review_path.exists())
+            report = review_path.read_text(encoding='utf-8')
+            self.assertIn('审校报告', report)
+            self.assertIn('章节收口过满', report)
         finally:
             if project_dir.exists():
                 shutil.rmtree(project_dir)
@@ -117,6 +140,25 @@ class ProjectInitTests(unittest.TestCase):
         self.assertLess(small['meta']['estimated_plot_units'], large['meta']['estimated_plot_units'])
         self.assertEqual(small['planning_profile']['label'], '短中篇模式')
         self.assertEqual(large['planning_profile']['label'], '长篇连载模式')
+
+    def test_analyze_draft_text_detects_common_issues(self) -> None:
+        text = '\n'.join(
+            [
+                '总之，他已经明白了。',
+                '总之，这件事没有表面那么简单。',
+                '然而下一刻，门外又有了动静。',
+                '然而他没有退。',
+                '然而那股寒意更近了。',
+                '然而四周一片死寂。',
+                '然而空气也跟着冷了下来。',
+                '事情终于告一段落。',
+            ]
+        )
+        findings = analyze_draft_text(text)
+        titles = {item['title'] for item in findings}
+        self.assertIn('解释过满', titles)
+        self.assertIn('重复句式', titles)
+        self.assertIn('章节收口过满', titles)
 
 
 if __name__ == '__main__':

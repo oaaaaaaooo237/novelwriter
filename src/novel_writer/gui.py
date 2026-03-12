@@ -17,6 +17,7 @@ from .state import (
     initialize_project,
     load_project_state,
     project_file_shortcuts,
+    review_draft_file,
     save_project_state,
     summarize_result,
     update_story_progress,
@@ -126,6 +127,7 @@ class App(tk.Tk):
         ttk.Button(action_bar, text='刷新当前项目', command=self._refresh_current_project).pack(side=tk.LEFT, padx=(8, 0))
         ttk.Button(action_bar, text='刷新章节卡', command=self._refresh_chapter_pipeline).pack(side=tk.LEFT, padx=(8, 0))
         ttk.Button(action_bar, text='推进一章', command=self._advance_chapter).pack(side=tk.LEFT, padx=(8, 0))
+        ttk.Button(action_bar, text='运行审校', command=self._run_local_review).pack(side=tk.LEFT, padx=(8, 0))
 
         shortcut_bar = ttk.LabelFrame(parent, text='项目快捷入口', padding=8)
         shortcut_bar.pack(fill=tk.X, pady=(12, 12))
@@ -133,7 +135,7 @@ class App(tk.Tk):
         shortcut_groups = [
             ['项目目录', '状态文件', '项目总览', '总纲模板', '人物圣经', '伏笔账本'],
             ['卷纲建议', '剧情单元', '章节卡模板', '最近进展', '当前章节卡', '当前章节写作提示'],
-            ['总导演提示', '单元规划提示', '章节卡提示', '正文写作提示', '审校提示'],
+            ['总导演提示', '单元规划提示', '章节卡提示', '正文写作提示', '审校提示', '审校目录'],
         ]
         for row_index, labels in enumerate(shortcut_groups):
             row = ttk.Frame(shortcut_bar)
@@ -390,6 +392,35 @@ class App(tk.Tk):
         reloaded = load_project_state(self.current_project_dir)
         self._apply_dashboard_state(self.current_project_dir, reloaded)
         messagebox.showinfo('推进成功', f'已记录第{chapter_number}章，并推进到第{reloaded["progress"]["current_chapter"]}章。')
+
+    def _run_local_review(self) -> None:
+        if self.current_project_dir is None or self.current_state is None:
+            messagebox.showwarning('尚未打开项目', '请先创建或打开一个项目。')
+            return
+
+        chapters_dir = self.current_project_dir / 'chapters'
+        initial_dir = str(chapters_dir if chapters_dir.exists() else self.current_project_dir)
+        draft_path = filedialog.askopenfilename(
+            parent=self,
+            title='选择要审校的章节草稿',
+            initialdir=initial_dir,
+            filetypes=[('Markdown 文件', '*.md'), ('文本文件', '*.txt'), ('所有文件', '*.*')],
+        )
+        if not draft_path:
+            return
+
+        try:
+            review_path = review_draft_file(self.current_project_dir, self.current_state, Path(draft_path))
+        except Exception as exc:  # noqa: BLE001
+            messagebox.showerror('审校失败', f'生成审校报告时出错：\n{exc}')
+            return
+
+        self.status_var.set(f'已生成审校报告：{review_path}')
+        try:
+            os.startfile(review_path)  # type: ignore[attr-defined]
+        except Exception:
+            pass
+        messagebox.showinfo('审校完成', f'已生成审校报告：\n{review_path}')
 
     def _create_project(self) -> None:
         title = self.title_var.get().strip()
