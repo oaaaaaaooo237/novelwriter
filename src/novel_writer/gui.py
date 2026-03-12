@@ -182,11 +182,9 @@ class App(tk.Tk):
         content_pane.pack(fill=tk.BOTH, expand=True)
 
         volume_frame = ttk.LabelFrame(content_pane, text='卷规划概览', padding=8)
-        summary_frame = ttk.LabelFrame(content_pane, text='项目摘要', padding=8)
-        review_frame = ttk.LabelFrame(content_pane, text='最近审校', padding=8)
+        lower_frame = ttk.Frame(content_pane)
         content_pane.add(volume_frame, weight=3)
-        content_pane.add(summary_frame, weight=2)
-        content_pane.add(review_frame, weight=2)
+        content_pane.add(lower_frame, weight=3)
 
         columns = ('title', 'range', 'words', 'goal')
         self.volume_tree = ttk.Treeview(volume_frame, columns=columns, show='headings', height=10)
@@ -206,7 +204,18 @@ class App(tk.Tk):
         self.volume_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         volume_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
+        detail_notebook = ttk.Notebook(lower_frame)
+        detail_notebook.pack(fill=tk.BOTH, expand=True)
+
+        summary_frame = ttk.Frame(detail_notebook, padding=8)
+        chapter_frame = ttk.Frame(detail_notebook, padding=8)
+        review_frame = ttk.Frame(detail_notebook, padding=8)
+        detail_notebook.add(summary_frame, text='项目摘要')
+        detail_notebook.add(chapter_frame, text='当前章节')
+        detail_notebook.add(review_frame, text='最近审校')
+
         self.dashboard_text = self._build_text_panel(summary_frame)
+        self.chapter_text = self._build_text_panel(chapter_frame)
         self.review_text = self._build_text_panel(review_frame)
 
     def _build_release_tab(self, parent: ttk.Frame) -> None:
@@ -309,6 +318,29 @@ class App(tk.Tk):
         self.review_text.delete('1.0', tk.END)
         self.review_text.insert('1.0', '\n'.join(lines) + '\n')
 
+    def _render_current_chapter_summary(self, project_dir: Path) -> None:
+        shortcuts = project_file_shortcuts(project_dir)
+        card_path = shortcuts['当前章节卡']
+        prompt_path = shortcuts['当前章节写作提示']
+        lines = ['# 当前章节摘要', '']
+        if card_path.exists():
+            card_lines = card_path.read_text(encoding='utf-8').splitlines()
+            lines.append(f"- 章节卡文件：{card_path}")
+            lines.append('')
+            lines.extend(card_lines[:18])
+        else:
+            lines.append('- 暂无当前章节卡。')
+
+        if prompt_path.exists():
+            prompt_lines = prompt_path.read_text(encoding='utf-8').splitlines()
+            lines.extend(['', '## 当前写作提示（节选）', ''])
+            lines.extend(prompt_lines[:16])
+        else:
+            lines.extend(['', '- 暂无当前写作提示。'])
+
+        self.chapter_text.delete('1.0', tk.END)
+        self.chapter_text.insert('1.0', '\n'.join(lines) + '\n')
+
     def _open_project_shortcut(self, label: str) -> None:
         if self.current_project_dir is None:
             messagebox.showwarning('尚未打开项目', '请先创建或打开一个项目。')
@@ -354,6 +386,7 @@ class App(tk.Tk):
 
         self.dashboard_text.delete('1.0', tk.END)
         self.dashboard_text.insert('1.0', dashboard_summary_text(state))
+        self._render_current_chapter_summary(project_dir)
         self._render_review_summary(project_dir)
         self.status_var.set(f'已载入项目：{project_dir}')
 

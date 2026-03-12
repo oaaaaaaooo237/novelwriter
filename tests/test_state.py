@@ -68,6 +68,8 @@ class ProjectInitTests(unittest.TestCase):
             self.assertTrue(shortcuts['审校提示'].exists())
             self.assertTrue(shortcuts['当前章节卡'].exists())
             self.assertTrue(shortcuts['当前章节写作提示'].exists())
+            self.assertIn('章节卡', shortcuts['当前章节卡'].read_text(encoding='utf-8'))
+            self.assertIn('当前写作提示', shortcuts['当前章节写作提示'].read_text(encoding='utf-8'))
 
             plot_units = loaded_state['plot_units']
             self.assertEqual(plot_units[0]['chapter_start'], 1)
