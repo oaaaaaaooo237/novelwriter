@@ -9,7 +9,9 @@ from novel_writer.state import (
     build_story_state,
     dashboard_summary_text,
     initialize_project,
+    latest_review_summary,
     load_project_state,
+    parse_review_report,
     project_file_shortcuts,
     review_draft_file,
     save_project_state,
@@ -105,6 +107,12 @@ class ProjectInitTests(unittest.TestCase):
             report = review_path.read_text(encoding='utf-8')
             self.assertIn('审校报告', report)
             self.assertIn('章节收口过满', report)
+
+            items = parse_review_report(report)
+            self.assertGreaterEqual(len(items), 1)
+            summary_info = latest_review_summary(result.project_dir)
+            self.assertTrue(summary_info['exists'])
+            self.assertIn('高风险', summary_info['headline'])
         finally:
             if project_dir.exists():
                 shutil.rmtree(project_dir)

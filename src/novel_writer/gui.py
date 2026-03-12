@@ -15,6 +15,7 @@ from .state import (
     build_dashboard_metrics,
     dashboard_summary_text,
     initialize_project,
+    latest_review_summary,
     load_project_state,
     project_file_shortcuts,
     review_draft_file,
@@ -182,8 +183,10 @@ class App(tk.Tk):
 
         volume_frame = ttk.LabelFrame(content_pane, text='卷规划概览', padding=8)
         summary_frame = ttk.LabelFrame(content_pane, text='项目摘要', padding=8)
+        review_frame = ttk.LabelFrame(content_pane, text='最近审校', padding=8)
         content_pane.add(volume_frame, weight=3)
         content_pane.add(summary_frame, weight=2)
+        content_pane.add(review_frame, weight=2)
 
         columns = ('title', 'range', 'words', 'goal')
         self.volume_tree = ttk.Treeview(volume_frame, columns=columns, show='headings', height=10)
@@ -204,6 +207,7 @@ class App(tk.Tk):
         volume_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
         self.dashboard_text = self._build_text_panel(summary_frame)
+        self.review_text = self._build_text_panel(review_frame)
 
     def _build_release_tab(self, parent: ttk.Frame) -> None:
         action_bar = ttk.Frame(parent)
@@ -283,6 +287,28 @@ class App(tk.Tk):
         for button in self.shortcut_buttons.values():
             button.configure(state=state)
 
+    def _render_review_summary(self, project_dir: Path) -> None:
+        summary = latest_review_summary(project_dir)
+        lines = ['# 最近审校摘要', '']
+        if not summary['exists']:
+            lines.append('- 暂无审校结果。')
+        else:
+            lines.append(f"- 概览：{summary['headline']}")
+            lines.append(f"- 报告路径：{summary['path']}")
+            lines.append('')
+            if summary['high_risk']:
+                lines.append('## 高风险项')
+                for item in summary['high_risk']:
+                    lines.append(f"- {item['title']}：{item.get('detail', '')}")
+            elif summary['items']:
+                lines.append('## 最近提示')
+                for item in summary['items'][:3]:
+                    lines.append(f"- {item['title']}（{item.get('severity', '--')}）：{item.get('detail', '')}")
+            else:
+                lines.append('- 该报告中没有可解析的条目。')
+        self.review_text.delete('1.0', tk.END)
+        self.review_text.insert('1.0', '\n'.join(lines) + '\n')
+
     def _open_project_shortcut(self, label: str) -> None:
         if self.current_project_dir is None:
             messagebox.showwarning('尚未打开项目', '请先创建或打开一个项目。')
@@ -328,6 +354,7 @@ class App(tk.Tk):
 
         self.dashboard_text.delete('1.0', tk.END)
         self.dashboard_text.insert('1.0', dashboard_summary_text(state))
+        self._render_review_summary(project_dir)
         self.status_var.set(f'已载入项目：{project_dir}')
 
     def _open_project(self) -> None:
@@ -416,6 +443,7 @@ class App(tk.Tk):
             return
 
         self.status_var.set(f'已生成审校报告：{review_path}')
+        self._render_review_summary(self.current_project_dir)
         try:
             os.startfile(review_path)  # type: ignore[attr-defined]
         except Exception:

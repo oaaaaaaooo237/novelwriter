@@ -988,6 +988,64 @@ def review_draft_file(project_dir: Path, state: dict[str, Any], draft_path: Path
     return out_path
 
 
+def parse_review_report(report_text: str) -> list[dict[str, str]]:
+    findings: list[dict[str, str]] = []
+    current: dict[str, str] | None = None
+    for raw_line in report_text.splitlines():
+        line = raw_line.strip()
+        if line.startswith('## '):
+            if current:
+                findings.append(current)
+            title = line[3:]
+            if '. ' in title:
+                title = title.split('. ', 1)[1]
+            current = {'title': title}
+        elif current and line.startswith('- 风险等级：'):
+            current['severity'] = line.split('：', 1)[1].strip()
+        elif current and line.startswith('- 说明：'):
+            current['detail'] = line.split('：', 1)[1].strip()
+    if current:
+        findings.append(current)
+    return findings
+
+
+def latest_review_file(project_dir: Path) -> Path | None:
+    reviews_dir = project_dir / 'reviews'
+    if not reviews_dir.exists():
+        return None
+    candidates = sorted(reviews_dir.glob('*_review.md'), key=lambda path: path.stat().st_mtime, reverse=True)
+    return candidates[0] if candidates else None
+
+
+def latest_review_summary(project_dir: Path) -> dict[str, Any]:
+    review_path = latest_review_file(project_dir)
+    if review_path is None:
+        return {
+            'exists': False,
+            'headline': '暂无审校结果',
+            'high_risk': [],
+            'items': [],
+            'path': None,
+        }
+
+    report_text = review_path.read_text(encoding='utf-8')
+    items = parse_review_report(report_text)
+    high_risk = [item for item in items if item.get('severity') == '高']
+    headline = '未发现明显结构问题'
+    if high_risk:
+        headline = f"高风险 {len(high_risk)} 项"
+    elif items:
+        headline = f"共 {len(items)} 项提示"
+
+    return {
+        'exists': True,
+        'headline': headline,
+        'high_risk': high_risk,
+        'items': items,
+        'path': review_path,
+    }
+
+
 def current_volume(state: dict[str, Any], chapter_number: int | None = None) -> dict[str, Any]:
     target_chapter = chapter_number or state['progress']['current_chapter']
     for volume in state.get('volumes', []):
